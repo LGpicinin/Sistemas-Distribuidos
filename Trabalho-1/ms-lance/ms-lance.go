@@ -22,13 +22,13 @@ func main() {
 	defer ch.Close()
 
 	err = ch.ExchangeDeclare(
-		"logs_direct", // name
-		"direct",      // type
-		true,          // durable
-		false,         // auto-deleted
-		false,         // internal
-		false,         // no-wait
-		nil,           // arguments
+		"LEILAO", // name
+		"direct", // type
+		true,     // durable
+		false,    // auto-deleted
+		false,    // internal
+		false,    // no-wait
+		nil,      // arguments
 	)
 	common.FailOnError(err, "Failed to declare an exchange")
 
@@ -37,7 +37,7 @@ func main() {
 
 	body := bodyFrom(os.Args)
 	err = ch.PublishWithContext(ctx,
-		"logs_direct",         // exchange
+		"LEILAO",              // exchange
 		severityFrom(os.Args), // routing key
 		false,                 // mandatory
 		false,                 // immediate
