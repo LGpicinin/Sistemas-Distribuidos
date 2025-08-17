@@ -1,43 +1,45 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	common "common"
+
+	"github.com/rabbitmq/amqp091-go"
 )
 
+func consomeLeilaoIniciado(msgs <-chan amqp091.Delivery) {
+	for d := range msgs {
+		log.Printf(" [x] %s", d.Body)
+		d.Ack(true)
+	}
+}
+
+func hello() {
+	fmt.Println("========== Bem vindo ao UTFPR Leilões ==========")
+	fmt.Println("Caso deseje registrar um lance, pressione Enter. Caso deseje sair, aperte CTRL+C")
+}
+
+func menu() {
+	var input string
+	for fmt.Scanf("%s", &input); ; fmt.Scanf("%s", &input) {
+		fmt.Println("entro no loop")
+	}
+}
+
 func main() {
-	ch := common.ConnectToBroker()
-	q, err := common.CreateQueue(ch, "leilao_iniciado")
-	common.FailOnError(err, "Failed to declare a queue")
+	conn, ch := common.ConnectToBroker()
+	defer conn.Close()
+	defer ch.Close()
 
-	err = ch.QueueBind(
-		q.Name,   // queue name
-		"",       // routing key
-		"LEILAO", // exchange
-		false,
-		nil)
-	common.FailOnError(err, "Failed to bind a queue")
+	q, err := common.CreateOrGetQueueAndBind("leilao_iniciado", ch)
+	common.FailOnError(err, "Error connecting to queue")
 
-	msgs, err := ch.Consume(
-		q.Name, // queue
-		"",     // consumer
-		false,  // auto ack
-		false,  // exclusive
-		false,  // no local
-		false,  // no wait
-		nil,    // args
-	)
-	common.FailOnError(err, "Failed to register a consumer")
+	hello()
+	common.ConsumeEvents(q, ch, consomeLeilaoIniciado)
+	go menu()
 
 	var forever chan struct{}
-
-	go func() {
-		for d := range msgs {
-			log.Printf(" [x] %s", d.Body)
-		}
-	}()
-
-	log.Printf(" [*] Waiting for logs. To exit press CTRL+C")
 	<-forever
 }
