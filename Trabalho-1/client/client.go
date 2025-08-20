@@ -24,7 +24,7 @@ func hello() {
 func menu() {
 	var input string
 	for fmt.Scanf("%s", &input); ; fmt.Scanf("%s", &input) {
-		fmt.Println("entro no loop")
+		//fmt.Println("entro no loop")
 	}
 }
 

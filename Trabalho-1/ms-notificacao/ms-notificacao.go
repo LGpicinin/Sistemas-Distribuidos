@@ -12,5 +12,7 @@ func main() {
 	qLeilao1, err := common.CreateOrGetQueueAndBind("leilao_1", ch)
 	common.FailOnError(err, "Error connecting to queue")
 
-	common.PublishInQueue(ch, qLeilao1, "")
+	var b []byte
+
+	common.PublishInQueue(ch, qLeilao1, b)
 }

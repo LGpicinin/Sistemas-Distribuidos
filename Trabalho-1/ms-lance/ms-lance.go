@@ -12,5 +12,7 @@ func main() {
 	qLance, err := common.CreateOrGetQueueAndBind("lance_realizado", ch)
 	common.FailOnError(err, "Error connecting to queue")
 
-	common.PublishInQueue(ch, qLance, "")
+	var b []byte
+
+	common.PublishInQueue(ch, qLance, b)
 }
