@@ -9,6 +9,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/rabbitmq/amqp091-go"
 )
 
@@ -22,7 +23,7 @@ func createLeiloes() []common.Leilao {
 
 	for i := 0; i < 3; i++ {
 		start := time.Now().Add(time.Second * time.Duration(rand.Int()%10*i))
-		end := time.Now().Add(time.Second*time.Duration(rand.Int()%120) + time.Second*time.Duration(rand.Int()%10*i))
+		end := time.Now().Add(time.Second*time.Duration(rand.Int()%120) + time.Second*time.Duration(60))
 
 		leilao := common.CreateLeilao(ids[i], bens[i], start, end)
 		leiloes = append(leiloes, leilao)
@@ -54,7 +55,24 @@ func publishWhenStarts(ch *amqp091.Channel, q amqp091.Queue, leiloes []common.Le
 			common.PublishInQueue(ch, q, common.LeilaoToByteArray(first))
 			leiloes = append(leiloes[:0], leiloes[1:]...)
 
-			log.Printf("[MS-LEILAO] Published %s", first)
+			log.Printf("[MS-LEILAO] Published %s on %s\n\n", spew.Sdump(first), q.Name)
+			common.CreateQueue(ch, fmt.Sprintf("leilao_%s", first.ID))
+			if len(leiloes) == 0 {
+				break
+			}
+		}
+	}
+
+	allPublished <- true
+}
+
+func publishWhenFinishes(ch *amqp091.Channel, q amqp091.Queue, leiloes []common.Leilao, allPublished chan bool) {
+	for first := leiloes[0]; ; first = leiloes[0] {
+		if time.Now().Compare(first.EndDate) >= 0 {
+			common.PublishInQueue(ch, q, common.LeilaoToByteArray(first))
+			leiloes = append(leiloes[:0], leiloes[1:]...)
+
+			log.Printf("[MS-LEILAO] Published %s on %s", spew.Sdump(first), q.Name)
 			if len(leiloes) == 0 {
 				break
 			}
@@ -71,6 +89,8 @@ func main() {
 
 	qIniciado, err := common.CreateOrGetQueueAndBind("leilao_iniciado", ch)
 	common.FailOnError(err, "Error connecting to queue")
+	qFinalizado, err := common.CreateOrGetQueueAndBind("leilao_finalizado", ch)
+	common.FailOnError(err, "Error connecting to queue")
 
 	leiloes = createLeiloes()
 
@@ -82,9 +102,12 @@ func main() {
 	leiloesSortedByEnd = append(leiloesSortedByEnd, leiloes...)
 	sort.Sort(common.ByEndDate(leiloesSortedByEnd))
 
-	// common.PublishInQueue(ch, qIniciado, body)
-	publishedAllLeiloesWhenStart := make(chan bool)
-	go publishWhenStarts(ch, qIniciado, leiloesSortedByStart, publishedAllLeiloesWhenStart)
+	publishedAllLeiloesStart := make(chan bool)
+	go publishWhenStarts(ch, qIniciado, leiloesSortedByStart, publishedAllLeiloesStart)
 
-	<-publishedAllLeiloesWhenStart
+	publishedAllLeiloesEnd := make(chan bool)
+	go publishWhenFinishes(ch, qFinalizado, leiloesSortedByEnd, publishedAllLeiloesEnd)
+
+	<-publishedAllLeiloesStart
+	<-publishedAllLeiloesEnd
 }
