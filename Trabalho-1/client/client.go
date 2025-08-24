@@ -23,10 +23,22 @@ func hello() {
 	fmt.Println("Caso deseje registrar um lance, pressione Enter. Caso deseje sair, aperte CTRL+C")
 }
 
-func menu() {
+func publishLance(q amqp091.Queue, ch *amqp091.Channel, leilaoId string, userId string) {
+	var value float32
+	fmt.Print("Qual o valor do lance que deseja fazer? ")
+	fmt.Scanf("%f", &value)
+
+	lance := common.CreateLance(leilaoId, userId, value)
+
+}
+
+func menu(userId string, q amqp091.Queue, ch *amqp091.Channel) {
 	var input string
 	for fmt.Scanf("%s", &input); ; fmt.Scanf("%s", &input) {
-		//fmt.Println("entro no loop")
+		var leilaoId string
+		fmt.Print("Digite o ID do Leilão em que deseja registrar um lance, e o valor do lance: ")
+		fmt.Scanf("%s", &leilaoId)
+
 	}
 }
 
@@ -35,7 +47,7 @@ func main() {
 		log.Fatal("Uso correto: ./client id_do_cliente")
 	}
 
-	// userId := os.Args[1]
+	userId := os.Args[1]
 
 	conn, ch := common.ConnectToBroker()
 	defer conn.Close()
@@ -46,7 +58,7 @@ func main() {
 
 	hello()
 	common.ConsumeEvents(q, ch, consomeLeilaoIniciado)
-	go menu()
+	go menu(userId, q, ch)
 
 	var forever chan struct{}
 	<-forever
