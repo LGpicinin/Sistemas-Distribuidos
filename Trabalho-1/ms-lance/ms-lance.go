@@ -2,7 +2,21 @@ package main
 
 import (
 	common "common"
+	"log"
+
+	// "github.com/davecgh/go-spew/spew"
+	"github.com/rabbitmq/amqp091-go"
 )
+
+func consomeLances(msgs <-chan amqp091.Delivery) {
+	// publicKey, _ := common.ReadAndParseKey("ms-lance/keys/public/1.pem")
+
+	for d := range msgs {
+		log.Printf("[MS-LANCE] NOVO LANCE: %s", d.Body)
+
+		d.Ack(true)
+	}
+}
 
 func main() {
 	conn, ch := common.ConnectToBroker()
@@ -12,7 +26,8 @@ func main() {
 	qLance, err := common.CreateOrGetQueueAndBind("lance_realizado", ch)
 	common.FailOnError(err, "Error connecting to queue")
 
-	var b []byte
+	common.ConsumeEvents(qLance, ch, consomeLances)
 
-	common.PublishInQueue(ch, qLance, b)
+	var forever chan struct{}
+	<-forever
 }
