@@ -1,8 +1,10 @@
 package main
 
 import (
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -34,7 +36,29 @@ func publishLance(q amqp091.Queue, ch *amqp091.Channel, leilaoId string, userId 
 	fmt.Scanf("%f", &value)
 
 	lance := common.CreateLance(leilaoId, userId, value)
+	signature := signLance(lance, privateKey)
 
+	signedLance := common.CreateSignedLance(lance, signature)
+	signedLanceBytes := common.SignedLanceToByteArray(signedLance)
+
+	common.PublishInQueue(ch, q, signedLanceBytes)
+}
+
+func signLance(lance common.Lance, privateKey *rsa.PrivateKey) []byte {
+	lanceBytes := common.LanceToByteArray(lance)
+	hash := sha256.New()
+	_, err := hash.Write(lanceBytes)
+	if err != nil {
+		log.Fatalf("Error hashing message: %v", err)
+	}
+
+	hashedMessage := hash.Sum(nil)
+	signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hashedMessage)
+	if err != nil {
+		log.Fatalf("Error signing message: %v", err)
+	}
+
+	return signature
 }
 
 func menu(userId string, q amqp091.Queue, ch *amqp091.Channel, publicKey *rsa.PublicKey, privateKey *rsa.PrivateKey) {
@@ -84,8 +108,8 @@ func createKeys(userId string) (*rsa.PublicKey, *rsa.PrivateKey) {
 	return publicKey, privateKey
 }
 
-func initClient(args []string) (*rsa.PublicKey, *rsa.PrivateKey) {
-	userId := os.Args[1]
+func initClient(args []string) (*rsa.PublicKey, *rsa.PrivateKey, string) {
+	userId := args[1]
 
 	entries, _ := os.ReadDir("./client/keys/public")
 	for _, entry := range entries {
@@ -93,20 +117,20 @@ func initClient(args []string) (*rsa.PublicKey, *rsa.PrivateKey) {
 			publicKey, _ := common.ReadAndParseKey(fmt.Sprintf("%s/%s", "./client/keys/public", entry.Name()))
 			_, privateKey := common.ReadAndParseKey(fmt.Sprintf("%s/%s", "./client/keys/private", entry.Name()))
 
-			return publicKey, privateKey
+			return publicKey, privateKey, userId
 		}
-
 	}
 
-	return createKeys(userId)
+	publicKey, privateKey := createKeys(userId)
+	return publicKey, privateKey, userId
 }
 
 func main() {
 	if len(os.Args) != 2 {
-		log.Fatal("Uso correto: ./bin/client id_do_cliente")
+		log.Fatal("Uso correto: ./bin/client <entre|crie_id_do_cliente>")
 	}
 
-	publicKey, privateKey := initClient(os.Args)
+	publicKey, privateKey, userId := initClient(os.Args)
 	conn, ch := common.ConnectToBroker()
 	defer conn.Close()
 	defer ch.Close()
@@ -116,7 +140,10 @@ func main() {
 
 	hello()
 	common.ConsumeEvents(q, ch, consomeLeilaoIniciado)
-	go menu(userId, q, ch)
+
+	qLances, err := common.CreateOrGetQueueAndBind("lance_realizado", ch)
+	common.FailOnError(err, "Error connecting to queue")
+	go menu(userId, qLances, ch, publicKey, privateKey)
 
 	var forever chan struct{}
 	<-forever
