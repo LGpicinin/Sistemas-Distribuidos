@@ -4,7 +4,6 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -45,15 +44,8 @@ func publishLance(q amqp091.Queue, ch *amqp091.Channel, leilaoId string, userId 
 }
 
 func signLance(lance common.Lance, privateKey *rsa.PrivateKey) []byte {
-	lanceBytes := common.LanceToByteArray(lance)
-	hash := sha256.New()
-	_, err := hash.Write(lanceBytes)
-	if err != nil {
-		log.Fatalf("Error hashing message: %v", err)
-	}
-
-	hashedMessage := hash.Sum(nil)
-	signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hashedMessage)
+	hashedLance := common.HashLance(lance)
+	signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hashedLance)
 	if err != nil {
 		log.Fatalf("Error signing message: %v", err)
 	}
