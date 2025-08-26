@@ -1,3 +1,4 @@
 bin/*
-keys/public/*
-keys/private/*
+**/public/*
+**/private/*
+**/data/*
