@@ -14,7 +14,7 @@ import (
 var conn *amqp091.Connection
 var ch *amqp091.Channel
 
-// var activeLeiloes map[string]common.Leilao
+var activeLeiloes map[string]common.Leilao
 
 func verifySignature(signedLance common.SignedLance) (bool, error) {
 	hashedLance := common.HashLance(signedLance.Lance)
@@ -33,7 +33,6 @@ func handleLanceCandidate(lanceCanditate []byte) {
 		return
 	}
 
-	log.Printf("OIOI")
 }
 
 func consomeLances(msgs <-chan amqp091.Delivery) {
@@ -46,17 +45,44 @@ func consomeLances(msgs <-chan amqp091.Delivery) {
 	}
 }
 
+func consumeLeiloesIniciados(msgs <-chan amqp091.Delivery) {
+	for d := range msgs {
+		log.Printf("[MS-LANCE] NOVO LEILAO INICIADO: %s", d.Body)
+
+		leilao := common.ByteArrayToLeilao(d.Body)
+
+		activeLeiloes[leilao.ID] = leilao
+	}
+}
+
+func consumeLeiloesFinalizados(msgs <-chan amqp091.Delivery) {
+	for d := range msgs {
+		log.Printf("[MS-LANCE] NOVO LEILAO FINALIZADO: %s", d.Body)
+
+		leilao := common.ByteArrayToLeilao(d.Body)
+
+		delete(activeLeiloes, leilao.ID)
+	}
+}
+
 func main() {
 	conn, ch = common.ConnectToBroker()
 	defer conn.Close()
 	defer ch.Close()
 
-	// activeLeiloes = make(map[string]common.Leilao)
+	activeLeiloes = make(map[string]common.Leilao)
 
 	qLance, err := common.CreateOrGetQueueAndBind("lance_realizado", ch)
 	common.FailOnError(err, "Error connecting to queue")
-
 	common.ConsumeEvents(qLance, ch, consomeLances)
+
+	qLeiloesIniciados, err := common.CreateOrGetQueueAndBind("leilao_iniciado", ch)
+	common.FailOnError(err, "Error connecting to queue")
+	common.ConsumeEvents(qLeiloesIniciados, ch, consumeLeiloesIniciados)
+
+	qLeiloesFinalizados, err := common.CreateOrGetQueueAndBind("leilao_finalizado", ch)
+	common.FailOnError(err, "Error connecting to queue")
+	common.ConsumeEvents(qLeiloesFinalizados, ch, consumeLeiloesFinalizados)
 
 	var forever chan struct{}
 	<-forever
