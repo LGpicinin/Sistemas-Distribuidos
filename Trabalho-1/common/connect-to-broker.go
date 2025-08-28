@@ -4,6 +4,8 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+var EXCHANGE_NAME string = "LEILAO"
+
 func ConnectToBroker() (*amqp.Connection, *amqp.Channel) {
 
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
@@ -13,13 +15,13 @@ func ConnectToBroker() (*amqp.Connection, *amqp.Channel) {
 	FailOnError(err, "Failed to open a channel")
 
 	err = ch.ExchangeDeclare(
-		"LEILAO", // name
-		"direct", // type
-		true,     // durable
-		false,    // auto-deleted
-		false,    // internal
-		false,    // no-wait
-		nil,      // arguments
+		EXCHANGE_NAME, // name
+		"direct",      // type
+		true,          // durable
+		false,         // auto-deleted
+		false,         // internal
+		false,         // no-wait
+		nil,           // arguments
 	)
 	FailOnError(err, "Failed to declare an exchange")
 

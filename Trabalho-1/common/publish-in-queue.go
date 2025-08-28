@@ -13,11 +13,12 @@ func PublishInQueue(ch *amqp.Channel, q amqp.Queue, message []byte) {
 	defer cancel()
 
 	err := ch.PublishWithContext(ctx,
-		"LEILAO", // exchange
-		q.Name,   // routing key
-		false,    // mandatory
-		false,    // immediate
+		EXCHANGE_NAME, // exchange
+		q.Name,        // routing key
+		false,         // mandatory
+		false,         // immediate
 		amqp.Publishing{
+			// DeliveryMode: amqp.Persistent,
 			ContentType: "text/plain",
 			Body:        message,
 		})

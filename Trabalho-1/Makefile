@@ -1,7 +1,6 @@
 
 run: build
 	./bin/ms-notificacao &
-	./bin/client &
 	./bin/ms-leilao &
 	./bin/ms-lance &
 

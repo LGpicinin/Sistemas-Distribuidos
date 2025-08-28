@@ -20,7 +20,7 @@ import (
 func consomeLeilaoIniciado(msgs <-chan amqp091.Delivery) {
 	for d := range msgs {
 		log.Printf("[MS-LEILAO] NOVO LEILÃO: %s", spew.Sdump(common.ByteArrayToLeilao(d.Body)))
-		d.Ack(true)
+		d.Ack(false)
 	}
 }
 
