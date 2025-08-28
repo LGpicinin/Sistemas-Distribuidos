@@ -1,6 +1,10 @@
 package common
 
-import "encoding/json"
+import (
+	"crypto/sha256"
+	"encoding/json"
+	"log"
+)
 
 type Lance struct {
 	LeilaoID string  `json:"leilao_id"`
@@ -35,4 +39,16 @@ func ByteArrayToLance(byteArray []byte) Lance {
 	}
 
 	return lance
+}
+
+func HashLance(lance Lance) []byte {
+	lanceBytes := LanceToByteArray(lance)
+	hash := sha256.New()
+	_, err := hash.Write(lanceBytes)
+	if err != nil {
+		log.Fatalf("Error hashing message: %v", err)
+	}
+
+	hashedMessage := hash.Sum(nil)
+	return hashedMessage
 }
