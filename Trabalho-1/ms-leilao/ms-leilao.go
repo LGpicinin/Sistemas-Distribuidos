@@ -52,11 +52,11 @@ func createFileLeiloes(leiloes []common.Leilao) {
 func publishWhenStarts(ch *amqp091.Channel, q amqp091.Queue, leiloes []common.Leilao, allPublished chan bool) {
 	for first := leiloes[0]; ; first = leiloes[0] {
 		if time.Now().Compare(first.StartDate) >= 0 {
-			common.PublishInQueue(ch, q, common.LeilaoToByteArray(first))
+			common.PublishInQueue(ch, q, common.LeilaoToByteArray(first), "leilao_iniciado")
 			leiloes = append(leiloes[:0], leiloes[1:]...)
 
 			log.Printf("[MS-LEILAO] Published %s on %s\n\n", spew.Sdump(first), q.Name)
-			common.CreateQueue(ch, fmt.Sprintf("leilao_%s", first.ID))
+			common.CreateQueue(ch)
 			if len(leiloes) == 0 {
 				break
 			}
@@ -69,7 +69,7 @@ func publishWhenStarts(ch *amqp091.Channel, q amqp091.Queue, leiloes []common.Le
 func publishWhenFinishes(ch *amqp091.Channel, q amqp091.Queue, leiloes []common.Leilao, allPublished chan bool) {
 	for first := leiloes[0]; ; first = leiloes[0] {
 		if time.Now().Compare(first.EndDate) >= 0 {
-			common.PublishInQueue(ch, q, common.LeilaoToByteArray(first))
+			common.PublishInQueue(ch, q, common.LeilaoToByteArray(first), "leilao_finalizado")
 			leiloes = append(leiloes[:0], leiloes[1:]...)
 
 			log.Printf("[MS-LEILAO] Published %s on %s", spew.Sdump(first), q.Name)

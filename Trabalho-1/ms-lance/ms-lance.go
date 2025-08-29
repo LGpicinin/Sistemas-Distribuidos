@@ -34,18 +34,18 @@ func handleLanceCandidate(lanceCanditate []byte) {
 	signedLance := common.ByteArrayToSignedLance(lanceCanditate)
 	isValidSignature, err := verifySignature(signedLance)
 	if !isValidSignature {
-		log.Panicf("[MS-LANCE] Erro ao verificar chave: %v", err)
+		log.Printf("[MS-LANCE] Erro ao verificar chave: %v", err)
 		return
 	}
 
 	activeLeilao, ok := activeLeiloes[signedLance.Lance.LeilaoID]
 	if !ok {
-		log.Panicf("[MS-LANCE] Erro ao acessar leilão ativo %v", signedLance.Lance.LeilaoID)
+		log.Printf("[MS-LANCE] Erro ao acessar leilão ativo %v", signedLance.Lance.LeilaoID)
 		return
 	}
 
 	if signedLance.Lance.Value <= activeLeilao.LastValidLance.Value {
-		log.Panicf("[MS-LANCE] Lance não válido %v", signedLance.Lance)
+		log.Printf("[MS-LANCE] Lance não válido %v", signedLance.Lance)
 		return
 	}
 
@@ -53,7 +53,7 @@ func handleLanceCandidate(lanceCanditate []byte) {
 
 	q, err := common.CreateOrGetQueueAndBind("lance_validado", chIn)
 	common.FailOnError(err, "Error connecting to queue")
-	common.PublishInQueue(chOut, q, common.LanceToByteArray(signedLance.Lance))
+	common.PublishInQueue(chOut, q, common.LanceToByteArray(signedLance.Lance), "lance_validado")
 
 	log.Printf("Novo lance validado: %v", signedLance.Lance)
 }
@@ -92,10 +92,10 @@ func handleLeilaoFinalizado(leilaoByteArray []byte) {
 	if ok {
 		lastLance := activeLeilao.LastValidLance
 		if lastLance != (common.Lance{}) {
-			q, err := common.CreateOrGetQueueAndBind("leilao_vencedor", chIn)
+			q, err := common.CreateOrGetQueueAndBind("leilao_vencedor", chOut)
 			common.FailOnError(err, "Error connecting to queue")
 
-			common.PublishInQueue(chOut, q, common.LanceToByteArray(lastLance))
+			common.PublishInQueue(chOut, q, common.LanceToByteArray(lastLance), "leilao_vencedor")
 		}
 
 		delete(activeLeiloes, leilao.ID)
