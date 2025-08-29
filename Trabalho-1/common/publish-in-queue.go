@@ -7,14 +7,14 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func PublishInQueue(ch *amqp.Channel, q amqp.Queue, message []byte) {
+func PublishInQueue(ch *amqp.Channel, q amqp.Queue, message []byte, routing_key string) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	err := ch.PublishWithContext(ctx,
 		EXCHANGE_NAME, // exchange
-		q.Name,        // routing key
+		routing_key,   // routing key
 		false,         // mandatory
 		false,         // immediate
 		amqp.Publishing{
