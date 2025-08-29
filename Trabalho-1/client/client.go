@@ -17,6 +17,8 @@ import (
 	"github.com/rabbitmq/amqp091-go"
 )
 
+var leiloesInteressados map[string]string
+
 func consomeLeilaoIniciado(msgs <-chan amqp091.Delivery) {
 	for d := range msgs {
 		log.Printf("[MS-LEILAO] NOVO LEILÃO: %s", spew.Sdump(common.ByteArrayToLeilao(d.Body)))
@@ -27,6 +29,27 @@ func consomeLeilaoIniciado(msgs <-chan amqp091.Delivery) {
 func hello() {
 	fmt.Println("========== Bem vindo ao UTFPR Leilões ==========")
 	fmt.Println("Caso deseje registrar um lance, pressione Enter. Caso deseje sair, aperte CTRL+C")
+}
+
+func handleNotificacao(notificacaoByteArray []byte) {
+	notificacao := common.ByteArrayToNotificacao((notificacaoByteArray))
+
+	if notificacao.Status == common.NovoLance {
+		log.Printf("[MS-LEILAO] NOVA NOTIFICAÇÃO LANCE: %s", spew.Sdump(notificacao))
+	} else {
+		delete(leiloesInteressados, notificacao.Lance.LeilaoID)
+
+		log.Printf("[MS-LEILAO] NOVA NOTIFICAÇÃO GANHADOR: %s", spew.Sdump(notificacao))
+	}
+
+}
+
+func consomeLeilaoInteressado(msgs <-chan amqp091.Delivery) {
+	for d := range msgs {
+		go handleNotificacao(d.Body)
+
+		d.Ack(false)
+	}
 }
 
 func publishLance(q amqp091.Queue, ch *amqp091.Channel, leilaoId string, userId string, publicKey *rsa.PublicKey, privateKey *rsa.PrivateKey) {
@@ -40,7 +63,18 @@ func publishLance(q amqp091.Queue, ch *amqp091.Channel, leilaoId string, userId 
 	signedLance := common.CreateSignedLance(lance, signature)
 	signedLanceBytes := common.SignedLanceToByteArray(signedLance)
 
-	common.PublishInQueue(ch, q, signedLanceBytes)
+	common.PublishInQueue(ch, q, signedLanceBytes, "lance_realizado")
+
+	_, ok := leiloesInteressados[leilaoId]
+	if !ok {
+		leiloesInteressados[leilaoId] = leilaoId
+
+		nome_fila := fmt.Sprintf("leilao_%s", leilaoId)
+		q, err := common.CreateOrGetQueueAndBind(nome_fila, ch)
+		common.FailOnError(err, "Error connecting to queue")
+
+		common.ConsumeEvents(q, ch, consomeLeilaoInteressado)
+	}
 }
 
 func signLance(lance common.Lance, privateKey *rsa.PrivateKey) []byte {
@@ -126,6 +160,8 @@ func main() {
 	conn, ch := common.ConnectToBroker()
 	defer conn.Close()
 	defer ch.Close()
+
+	leiloesInteressados = make(map[string]string)
 
 	q, err := common.CreateOrGetQueueAndBind("leilao_iniciado", ch)
 	common.FailOnError(err, "Error connecting to queue")
