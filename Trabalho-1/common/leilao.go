@@ -23,6 +23,20 @@ func CreateLeilao(ID string, description string, startDate time.Time, endDate ti
 	return leilao
 }
 
+func (leilao *Leilao) ToByteArray() []byte {
+	leilaoByteArray, err := json.Marshal(*leilao)
+	if err != nil {
+		FailOnError(err, "Erro ao converter leilao para []byte")
+	}
+
+	return leilaoByteArray
+}
+
+func (leilao *Leilao) FromByteArray(byteArray []byte) {
+	err := json.Unmarshal(byteArray, leilao)
+	FailOnError(err, "Erro ao converter []byte para leilao")
+}
+
 type ByStartDate []Leilao
 
 func (a ByStartDate) Len() int           { return len(a) }
@@ -34,22 +48,3 @@ type ByEndDate []Leilao
 func (a ByEndDate) Len() int           { return len(a) }
 func (a ByEndDate) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByEndDate) Less(i, j int) bool { return a[i].EndDate.Compare(a[j].EndDate) == -1 }
-
-func LeilaoToByteArray(leilao Leilao) []byte {
-	leilaoByteArray, err := json.Marshal(leilao)
-	if err != nil {
-		FailOnError(err, "Erro ao converter leilao para []byte")
-	}
-
-	return leilaoByteArray
-}
-
-func ByteArrayToLeilao(byteArray []byte) Leilao {
-	var leilao Leilao
-	err := json.Unmarshal(byteArray, &leilao)
-	if err != nil {
-		FailOnError(err, "Erro ao converter []byte para leilao")
-	}
-
-	return leilao
-}

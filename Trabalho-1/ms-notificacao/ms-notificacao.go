@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	// "github.com/davecgh/go-spew/spew"
-	// "github.com/davecgh/go-spew/spew"
 	"github.com/rabbitmq/amqp091-go"
 )
 
@@ -18,7 +16,9 @@ var chOut *amqp091.Channel
 
 func handleLanceValidado(lanceValidad []byte) {
 	log.Printf("Novo lance validado: ")
-	lance := common.ByteArrayToLance(lanceValidad)
+	var lance common.Lance
+	lance.FromByteArray(lanceValidad)
+
 	routing_key := lance.LeilaoID
 
 	nome_fila := fmt.Sprintf("leilao_%s", routing_key)
@@ -28,7 +28,7 @@ func handleLanceValidado(lanceValidad []byte) {
 		Status: common.NovoLance,
 	}
 
-	byteNotificacao := common.NotificacaoToByteArray(notificacao)
+	byteNotificacao := notificacao.ToByteArray()
 
 	q, err := common.CreateOrGetQueueAndBind(nome_fila, chOut)
 	common.FailOnError(err, "Error connecting to queue")
@@ -49,7 +49,9 @@ func consomeLances(msgs <-chan amqp091.Delivery) {
 
 func handleLanceGanhador(lanceGanhador []byte) {
 	log.Printf("Novo lance ganhador: ")
-	lance := common.ByteArrayToLance(lanceGanhador)
+	var lance common.Lance
+	lance.FromByteArray(lanceGanhador)
+
 	routing_key := lance.LeilaoID
 
 	nome_fila := fmt.Sprintf("leilao_%s", routing_key)
@@ -59,7 +61,7 @@ func handleLanceGanhador(lanceGanhador []byte) {
 		Status: common.GanhadorLance,
 	}
 
-	byteNotificacao := common.NotificacaoToByteArray(notificacao)
+	byteNotificacao := notificacao.ToByteArray()
 
 	q, err := common.CreateOrGetQueueAndBind(nome_fila, chOut)
 	common.FailOnError(err, "Error connecting to queue")
@@ -87,11 +89,11 @@ func main() {
 	defer connOut.Close()
 	defer chOut.Close()
 
-	qLanceVal, err := common.CreateOrGetQueueAndBind("lance_validado", chIn)
+	qLanceVal, err := common.CreateOrGetQueueAndBind(common.QUEUE_LANCE_VALIDADO, chIn)
 	common.FailOnError(err, "Error connecting to queue")
 	common.ConsumeEvents(qLanceVal, chIn, consomeLances)
 
-	qLanceWin, err := common.CreateOrGetQueueAndBind("leilao_vencedor", chIn)
+	qLanceWin, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_VENCEDOR, chIn)
 	common.FailOnError(err, "Error connecting to queue")
 	common.ConsumeEvents(qLanceWin, chIn, consomeLancesGanhador)
 

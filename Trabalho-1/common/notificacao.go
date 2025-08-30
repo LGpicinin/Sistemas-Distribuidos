@@ -25,21 +25,14 @@ func CreateNotificacao(lance Lance, status Status) Notificacao {
 	return notificacao
 }
 
-func NotificacaoToByteArray(notificacao Notificacao) []byte {
-	notificacaoByteArray, err := json.Marshal(notificacao)
-	if err != nil {
-		FailOnError(err, "Erro ao converter notificação para []byte")
-	}
+func (notificacao *Notificacao) ToByteArray() []byte {
+	notificacaoByteArray, err := json.Marshal(*notificacao)
+	FailOnError(err, "Erro ao converter notificação para []byte")
 
 	return notificacaoByteArray
 }
 
-func ByteArrayToNotificacao(byteArray []byte) Notificacao {
-	var notificacao Notificacao
-	err := json.Unmarshal(byteArray, &notificacao)
-	if err != nil {
-		FailOnError(err, "Erro ao converter []byte para notificação")
-	}
-
-	return notificacao
+func (notificacao *Notificacao) FromByteArray(byteArray []byte) {
+	err := json.Unmarshal(byteArray, notificacao)
+	FailOnError(err, "Erro ao converter []byte para notificação")
 }

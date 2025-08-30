@@ -36,7 +36,7 @@ func createFileLeiloes(leiloes []common.Leilao) {
 	for i := range leiloes {
 		leilao := leiloes[i]
 
-		leilaoByteArray := common.LeilaoToByteArray(leilao)
+		leilaoByteArray := leilao.ToByteArray()
 
 		file, err := os.Create(fmt.Sprintf("ms-leilao/data/leilao-%s.json", leilao.ID))
 		if err != nil {
@@ -52,7 +52,7 @@ func createFileLeiloes(leiloes []common.Leilao) {
 func publishWhenStarts(ch *amqp091.Channel, q amqp091.Queue, leiloes []common.Leilao, allPublished chan bool) {
 	for first := leiloes[0]; ; first = leiloes[0] {
 		if time.Now().Compare(first.StartDate) >= 0 {
-			common.PublishInQueue(ch, q, common.LeilaoToByteArray(first), "leilao_iniciado")
+			common.PublishInQueue(ch, q, first.ToByteArray(), common.QUEUE_LEILAO_INICIADO)
 			leiloes = append(leiloes[:0], leiloes[1:]...)
 
 			log.Printf("[MS-LEILAO] Published %s on %s\n\n", spew.Sdump(first), q.Name)
@@ -69,7 +69,7 @@ func publishWhenStarts(ch *amqp091.Channel, q amqp091.Queue, leiloes []common.Le
 func publishWhenFinishes(ch *amqp091.Channel, q amqp091.Queue, leiloes []common.Leilao, allPublished chan bool) {
 	for first := leiloes[0]; ; first = leiloes[0] {
 		if time.Now().Compare(first.EndDate) >= 0 {
-			common.PublishInQueue(ch, q, common.LeilaoToByteArray(first), "leilao_finalizado")
+			common.PublishInQueue(ch, q, first.ToByteArray(), common.QUEUE_LEILAO_FINALIZADO)
 			leiloes = append(leiloes[:0], leiloes[1:]...)
 
 			log.Printf("[MS-LEILAO] Published %s on %s", spew.Sdump(first), q.Name)
@@ -87,9 +87,9 @@ func main() {
 	defer conn.Close()
 	defer ch.Close()
 
-	qIniciado, err := common.CreateOrGetQueueAndBind("leilao_iniciado", ch)
+	qIniciado, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_INICIADO, ch)
 	common.FailOnError(err, "Error connecting to queue")
-	qFinalizado, err := common.CreateOrGetQueueAndBind("leilao_finalizado", ch)
+	qFinalizado, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_FINALIZADO, ch)
 	common.FailOnError(err, "Error connecting to queue")
 
 	leiloes = createLeiloes()

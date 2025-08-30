@@ -4,8 +4,6 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-var EXCHANGE_NAME string = "LEILAO"
-
 func ConnectToBroker() (*amqp.Connection, *amqp.Channel) {
 
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")

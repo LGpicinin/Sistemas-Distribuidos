@@ -16,21 +16,14 @@ func CreateSignedLance(lance Lance, signature []byte) SignedLance {
 	return signedLance
 }
 
-func SignedLanceToByteArray(lance SignedLance) []byte {
-	leilaoByteArray, err := json.Marshal(lance)
-	if err != nil {
-		FailOnError(err, "Erro ao converter lance para []byte")
-	}
+func (signedLance *SignedLance) ToByteArray() []byte {
+	leilaoByteArray, err := json.Marshal(*signedLance)
+	FailOnError(err, "Erro ao converter lance para []byte")
 
 	return leilaoByteArray
 }
 
-func ByteArrayToSignedLance(byteArray []byte) SignedLance {
-	var lance SignedLance
-	err := json.Unmarshal(byteArray, &lance)
-	if err != nil {
-		FailOnError(err, "Erro ao converter []byte para lance")
-	}
-
-	return lance
+func (signedLance *SignedLance) FromByteArray(byteArray []byte) {
+	err := json.Unmarshal(byteArray, signedLance)
+	FailOnError(err, "Erro ao converter []byte para lance")
 }

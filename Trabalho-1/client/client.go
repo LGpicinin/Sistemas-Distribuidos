@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -21,7 +20,9 @@ var leiloesInteressados map[string]string
 
 func consomeLeilaoIniciado(msgs <-chan amqp091.Delivery) {
 	for d := range msgs {
-		log.Printf("[MS-LEILAO] NOVO LEILÃO: %s", spew.Sdump(common.ByteArrayToLeilao(d.Body)))
+		var leilao common.Leilao
+		leilao.FromByteArray(d.Body)
+		log.Printf("[MS-LEILAO] NOVO LEILÃO: %s", spew.Sdump(leilao))
 		d.Ack(false)
 	}
 }
@@ -32,7 +33,8 @@ func hello() {
 }
 
 func handleNotificacao(notificacaoByteArray []byte) {
-	notificacao := common.ByteArrayToNotificacao((notificacaoByteArray))
+	var notificacao common.Notificacao
+	notificacao.FromByteArray(notificacaoByteArray)
 
 	if notificacao.Status == common.NovoLance {
 		log.Printf("[MS-LEILAO] NOVA NOTIFICAÇÃO LANCE: %s", spew.Sdump(notificacao))
@@ -58,12 +60,12 @@ func publishLance(q amqp091.Queue, ch *amqp091.Channel, leilaoId string, userId 
 	fmt.Scanf("%f", &value)
 
 	lance := common.CreateLance(leilaoId, userId, value)
-	signature := signLance(lance, privateKey)
+	signature := lance.Sign(privateKey)
 
 	signedLance := common.CreateSignedLance(lance, signature)
-	signedLanceBytes := common.SignedLanceToByteArray(signedLance)
+	signedLanceBytes := signedLance.ToByteArray()
 
-	common.PublishInQueue(ch, q, signedLanceBytes, "lance_realizado")
+	common.PublishInQueue(ch, q, signedLanceBytes, common.QUEUE_LANCE_REALIZADO)
 
 	_, ok := leiloesInteressados[leilaoId]
 	if !ok {
@@ -75,16 +77,6 @@ func publishLance(q amqp091.Queue, ch *amqp091.Channel, leilaoId string, userId 
 
 		common.ConsumeEvents(q, ch, consomeLeilaoInteressado)
 	}
-}
-
-func signLance(lance common.Lance, privateKey *rsa.PrivateKey) []byte {
-	hashedLance := common.HashLance(lance)
-	signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hashedLance)
-	if err != nil {
-		log.Fatalf("Error signing message: %v", err)
-	}
-
-	return signature
 }
 
 func menu(userId string, q amqp091.Queue, ch *amqp091.Channel, publicKey *rsa.PublicKey, privateKey *rsa.PrivateKey) {
@@ -163,13 +155,13 @@ func main() {
 
 	leiloesInteressados = make(map[string]string)
 
-	q, err := common.CreateOrGetQueueAndBind("leilao_iniciado", ch)
+	q, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_INICIADO, ch)
 	common.FailOnError(err, "Error connecting to queue")
 
 	hello()
 	common.ConsumeEvents(q, ch, consomeLeilaoIniciado)
 
-	qLances, err := common.CreateOrGetQueueAndBind("lance_realizado", ch)
+	qLances, err := common.CreateOrGetQueueAndBind(common.QUEUE_LANCE_REALIZADO, ch)
 	common.FailOnError(err, "Error connecting to queue")
 	go menu(userId, qLances, ch, publicKey, privateKey)
 

@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"log"
 
-	// "github.com/davecgh/go-spew/spew"
-	// "github.com/davecgh/go-spew/spew"
 	"github.com/rabbitmq/amqp091-go"
 )
 
@@ -21,7 +19,7 @@ var chOut *amqp091.Channel
 var activeLeiloes map[string]common.ActiveLeilao
 
 func verifySignature(signedLance common.SignedLance) (bool, error) {
-	hashedLance := common.HashLance(signedLance.Lance)
+	hashedLance := signedLance.Lance.Hash()
 
 	publicKey, _ := common.ReadAndParseKey(fmt.Sprintf("ms-lance/keys/public/%s.pem", signedLance.Lance.UserID))
 
@@ -31,7 +29,9 @@ func verifySignature(signedLance common.SignedLance) (bool, error) {
 
 func handleLanceCandidate(lanceCanditate []byte) {
 	log.Printf("Novo lance validado:gsadgsajdbs ")
-	signedLance := common.ByteArrayToSignedLance(lanceCanditate)
+	var signedLance common.SignedLance
+	signedLance.FromByteArray(lanceCanditate)
+
 	isValidSignature, err := verifySignature(signedLance)
 	if !isValidSignature {
 		log.Printf("[MS-LANCE] Erro ao verificar chave: %v", err)
@@ -53,9 +53,9 @@ func handleLanceCandidate(lanceCanditate []byte) {
 
 	activeLeiloes[signedLance.Lance.LeilaoID] = activeLeilao
 
-	q, err := common.CreateOrGetQueueAndBind("lance_validado", chIn)
+	q, err := common.CreateOrGetQueueAndBind(common.QUEUE_LANCE_VALIDADO, chIn)
 	common.FailOnError(err, "Error connecting to queue")
-	common.PublishInQueue(chOut, q, common.LanceToByteArray(signedLance.Lance), "lance_validado")
+	common.PublishInQueue(chOut, q, signedLance.Lance.ToByteArray(), common.QUEUE_LANCE_VALIDADO)
 
 	log.Printf("Novo lance validado: %v", signedLance.Lance)
 }
@@ -71,7 +71,8 @@ func consomeLances(msgs <-chan amqp091.Delivery) {
 }
 
 func handleLeilaoIniciado(leilaoByteArray []byte) {
-	leilao := common.ByteArrayToLeilao(leilaoByteArray)
+	var leilao common.Leilao
+	leilao.FromByteArray(leilaoByteArray)
 
 	activeLeiloes[leilao.ID] = common.ActiveLeilao{
 		Leilao: leilao,
@@ -89,15 +90,17 @@ func consumeLeiloesIniciados(msgs <-chan amqp091.Delivery) {
 }
 
 func handleLeilaoFinalizado(leilaoByteArray []byte) {
-	leilao := common.ByteArrayToLeilao(leilaoByteArray)
+	var leilao common.Leilao
+	leilao.FromByteArray(leilaoByteArray)
+
 	activeLeilao, ok := activeLeiloes[leilao.ID]
 	if ok {
 		lastLance := activeLeilao.LastValidLance
 		if lastLance != (common.Lance{}) {
-			q, err := common.CreateOrGetQueueAndBind("leilao_vencedor", chOut)
+			q, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_VENCEDOR, chOut)
 			common.FailOnError(err, "Error connecting to queue")
 
-			common.PublishInQueue(chOut, q, common.LanceToByteArray(lastLance), "leilao_vencedor")
+			common.PublishInQueue(chOut, q, lastLance.ToByteArray(), common.QUEUE_LEILAO_VENCEDOR)
 		}
 
 		delete(activeLeiloes, leilao.ID)
@@ -125,15 +128,15 @@ func main() {
 
 	activeLeiloes = make(map[string]common.ActiveLeilao)
 
-	qLance, err := common.CreateOrGetQueueAndBind("lance_realizado", chIn)
+	qLance, err := common.CreateOrGetQueueAndBind(common.QUEUE_LANCE_REALIZADO, chIn)
 	common.FailOnError(err, "Error connecting to queue")
 	common.ConsumeEvents(qLance, chIn, consomeLances)
 
-	qLeiloesIniciados, err := common.CreateOrGetQueueAndBind("leilao_iniciado", chIn)
+	qLeiloesIniciados, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_INICIADO, chIn)
 	common.FailOnError(err, "Error connecting to queue")
 	common.ConsumeEvents(qLeiloesIniciados, chIn, consumeLeiloesIniciados)
 
-	qLeiloesFinalizados, err := common.CreateOrGetQueueAndBind("leilao_finalizado", chIn)
+	qLeiloesFinalizados, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_FINALIZADO, chIn)
 	common.FailOnError(err, "Error connecting to queue")
 	common.ConsumeEvents(qLeiloesFinalizados, chIn, consumeLeiloesFinalizados)
 
