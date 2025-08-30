@@ -51,6 +51,8 @@ func handleLanceCandidate(lanceCanditate []byte) {
 
 	activeLeilao.LastValidLance = signedLance.Lance
 
+	activeLeiloes[signedLance.Lance.LeilaoID] = activeLeilao
+
 	q, err := common.CreateOrGetQueueAndBind("lance_validado", chIn)
 	common.FailOnError(err, "Error connecting to queue")
 	common.PublishInQueue(chOut, q, common.LanceToByteArray(signedLance.Lance), "lance_validado")
