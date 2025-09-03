@@ -4,9 +4,9 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func CreateQueue(ch *amqp.Channel) (amqp.Queue, error) {
+func CreateQueue(queueName string, ch *amqp.Channel) (amqp.Queue, error) {
 	q, err := ch.QueueDeclare(
-		"",    // name
+		queueName,    // name
 		true,  // durable
 		false, // delete when unused
 		false, // exclusive
@@ -17,13 +17,13 @@ func CreateQueue(ch *amqp.Channel) (amqp.Queue, error) {
 	return q, err
 }
 
-func CreateOrGetQueueAndBind(queueName string, ch *amqp.Channel) (amqp.Queue, error) {
-	q, err := CreateQueue(ch)
+func CreateOrGetQueueAndBind(queueName string, routingKey string, ch *amqp.Channel) (amqp.Queue, error) {
+	q, err := CreateQueue(queueName, ch)
 	FailOnError(err, "Failed to declare a queue")
 
 	err = ch.QueueBind(
 		q.Name,        // queue name
-		queueName,     // routing key
+		routingKey,     // routing key
 		EXCHANGE_NAME, // exchange
 		false,
 		nil)

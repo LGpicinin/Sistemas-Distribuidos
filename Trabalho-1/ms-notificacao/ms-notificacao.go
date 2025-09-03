@@ -30,7 +30,7 @@ func handleLanceValidado(lanceValidad []byte) {
 
 	byteNotificacao := notificacao.ToByteArray()
 
-	q, err := common.CreateOrGetQueueAndBind(nome_fila, chOut)
+	q, err := common.CreateOrGetQueueAndBind("", nome_fila, chOut)
 	common.FailOnError(err, "Error connecting to queue")
 
 	common.PublishInQueue(chOut, q, byteNotificacao, nome_fila)
@@ -63,7 +63,7 @@ func handleLanceGanhador(lanceGanhador []byte) {
 
 	byteNotificacao := notificacao.ToByteArray()
 
-	q, err := common.CreateOrGetQueueAndBind(nome_fila, chOut)
+	q, err := common.CreateOrGetQueueAndBind("", nome_fila, chOut)
 	common.FailOnError(err, "Error connecting to queue")
 
 	common.PublishInQueue(chOut, q, byteNotificacao, nome_fila)
@@ -89,11 +89,11 @@ func main() {
 	defer connOut.Close()
 	defer chOut.Close()
 
-	qLanceVal, err := common.CreateOrGetQueueAndBind(common.QUEUE_LANCE_VALIDADO, chIn)
+	qLanceVal, err := common.CreateOrGetQueueAndBind(common.QUEUE_LANCE_VALIDADO, common.QUEUE_LANCE_VALIDADO, chIn)
 	common.FailOnError(err, "Error connecting to queue")
 	common.ConsumeEvents(qLanceVal, chIn, consomeLances)
 
-	qLanceWin, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_VENCEDOR, chIn)
+	qLanceWin, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_VENCEDOR, common.QUEUE_LEILAO_VENCEDOR, chIn)
 	common.FailOnError(err, "Error connecting to queue")
 	common.ConsumeEvents(qLanceWin, chIn, consomeLancesGanhador)
 

@@ -53,7 +53,7 @@ func handleLanceCandidate(lanceCanditate []byte) {
 
 	activeLeiloes[signedLance.Lance.LeilaoID] = activeLeilao
 
-	q, err := common.CreateOrGetQueueAndBind(common.QUEUE_LANCE_VALIDADO, chIn)
+	q, err := common.CreateOrGetQueueAndBind(common.QUEUE_LANCE_VALIDADO, common.QUEUE_LANCE_VALIDADO, chIn)
 	common.FailOnError(err, "Error connecting to queue")
 	common.PublishInQueue(chOut, q, signedLance.Lance.ToByteArray(), common.QUEUE_LANCE_VALIDADO)
 
@@ -97,7 +97,7 @@ func handleLeilaoFinalizado(leilaoByteArray []byte) {
 	if ok {
 		lastLance := activeLeilao.LastValidLance
 		if lastLance != (common.Lance{}) {
-			q, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_VENCEDOR, chOut)
+			q, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_VENCEDOR, common.QUEUE_LEILAO_VENCEDOR, chOut)
 			common.FailOnError(err, "Error connecting to queue")
 
 			common.PublishInQueue(chOut, q, lastLance.ToByteArray(), common.QUEUE_LEILAO_VENCEDOR)
@@ -128,15 +128,15 @@ func main() {
 
 	activeLeiloes = make(map[string]common.ActiveLeilao)
 
-	qLance, err := common.CreateOrGetQueueAndBind(common.QUEUE_LANCE_REALIZADO, chIn)
+	qLance, err := common.CreateOrGetQueueAndBind(common.QUEUE_LANCE_REALIZADO, common.QUEUE_LANCE_REALIZADO, chIn)
 	common.FailOnError(err, "Error connecting to queue")
 	common.ConsumeEvents(qLance, chIn, consomeLances)
 
-	qLeiloesIniciados, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_INICIADO, chIn)
+	qLeiloesIniciados, err := common.CreateOrGetQueueAndBind("", common.QUEUE_LEILAO_INICIADO, chIn)
 	common.FailOnError(err, "Error connecting to queue")
 	common.ConsumeEvents(qLeiloesIniciados, chIn, consumeLeiloesIniciados)
 
-	qLeiloesFinalizados, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_FINALIZADO, chIn)
+	qLeiloesFinalizados, err := common.CreateOrGetQueueAndBind("", common.QUEUE_LEILAO_FINALIZADO, chIn)
 	common.FailOnError(err, "Error connecting to queue")
 	common.ConsumeEvents(qLeiloesFinalizados, chIn, consumeLeiloesFinalizados)
 

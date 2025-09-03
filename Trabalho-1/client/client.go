@@ -72,7 +72,7 @@ func publishLance(q amqp091.Queue, ch *amqp091.Channel, leilaoId string, userId 
 		leiloesInteressados[leilaoId] = leilaoId
 
 		nome_fila := fmt.Sprintf("leilao_%s", leilaoId)
-		q, err := common.CreateOrGetQueueAndBind(nome_fila, ch)
+		q, err := common.CreateOrGetQueueAndBind("", nome_fila, ch)
 		common.FailOnError(err, "Error connecting to queue")
 
 		common.ConsumeEvents(q, ch, consomeLeilaoInteressado)
@@ -155,13 +155,13 @@ func main() {
 
 	leiloesInteressados = make(map[string]string)
 
-	q, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_INICIADO, ch)
+	q, err := common.CreateOrGetQueueAndBind("", common.QUEUE_LEILAO_INICIADO, ch)
 	common.FailOnError(err, "Error connecting to queue")
 
 	hello()
 	common.ConsumeEvents(q, ch, consomeLeilaoIniciado)
 
-	qLances, err := common.CreateOrGetQueueAndBind(common.QUEUE_LANCE_REALIZADO, ch)
+	qLances, err := common.CreateOrGetQueueAndBind(common.QUEUE_LANCE_REALIZADO, common.QUEUE_LANCE_REALIZADO, ch)
 	common.FailOnError(err, "Error connecting to queue")
 	go menu(userId, qLances, ch, publicKey, privateKey)
 

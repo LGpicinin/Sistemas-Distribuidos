@@ -56,7 +56,7 @@ func publishWhenStarts(ch *amqp091.Channel, q amqp091.Queue, leiloes []common.Le
 			leiloes = append(leiloes[:0], leiloes[1:]...)
 
 			log.Printf("[MS-LEILAO] Published %s on %s\n\n", spew.Sdump(first), q.Name)
-			common.CreateQueue(ch)
+			common.CreateQueue("", ch)
 			if len(leiloes) == 0 {
 				break
 			}
@@ -87,9 +87,9 @@ func main() {
 	defer conn.Close()
 	defer ch.Close()
 
-	qIniciado, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_INICIADO, ch)
+	qIniciado, err := common.CreateOrGetQueueAndBind("", common.QUEUE_LEILAO_INICIADO, ch)
 	common.FailOnError(err, "Error connecting to queue")
-	qFinalizado, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_FINALIZADO, ch)
+	qFinalizado, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_FINALIZADO, common.QUEUE_LEILAO_FINALIZADO, ch)
 	common.FailOnError(err, "Error connecting to queue")
 
 	leiloes = createLeiloes()
