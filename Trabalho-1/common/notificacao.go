@@ -36,3 +36,9 @@ func (notificacao *Notificacao) FromByteArray(byteArray []byte) {
 	err := json.Unmarshal(byteArray, notificacao)
 	FailOnError(err, "Erro ao converter []byte para notificação")
 }
+
+func (notificacao *Notificacao) Print() string {
+	return "\nNotificação:\n" +
+		"\tStatus: " + string(notificacao.Status) + "\n" +
+		"\t" + notificacao.Lance.Print() + "\n"
+}

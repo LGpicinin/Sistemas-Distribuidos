@@ -15,9 +15,9 @@ var connOut *amqp091.Connection
 var chOut *amqp091.Channel
 
 func handleLanceValidado(lanceValidad []byte) {
-	log.Printf("Novo lance validado: ")
 	var lance common.Lance
 	lance.FromByteArray(lanceValidad)
+	log.Printf("[MS-NOTIFICACAO] NOVO LANCE VALIDADO: %s", lance.Print())
 
 	routing_key := lance.LeilaoID
 
@@ -39,7 +39,7 @@ func handleLanceValidado(lanceValidad []byte) {
 
 func consomeLances(msgs <-chan amqp091.Delivery) {
 	for d := range msgs {
-		log.Printf("[MS-LANCE] NOVO LANCE VALIDADO: %s", d.Body)
+		// log.Printf("[MS-NOTIFICACAO] NOVO LANCE VALIDADO: %s", d.Body)
 
 		go handleLanceValidado(d.Body)
 
@@ -48,9 +48,9 @@ func consomeLances(msgs <-chan amqp091.Delivery) {
 }
 
 func handleLanceGanhador(lanceGanhador []byte) {
-	log.Printf("Novo lance ganhador: ")
 	var lance common.Lance
 	lance.FromByteArray(lanceGanhador)
+	log.Printf("[MS-NOTIFICACAO] NOVO LANCE GANHADOR: %s", lance.Print())
 
 	routing_key := lance.LeilaoID
 
@@ -72,7 +72,7 @@ func handleLanceGanhador(lanceGanhador []byte) {
 
 func consomeLancesGanhador(msgs <-chan amqp091.Delivery) {
 	for d := range msgs {
-		log.Printf("[MS-LANCE] NOVO LANCE GANHADOR: %s", d.Body)
+		// log.Printf("[MS-NOTIFICACAO] NOVO LANCE GANHADOR: %s", d.Body)
 
 		go handleLanceGanhador(d.Body)
 

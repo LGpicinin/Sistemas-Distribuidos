@@ -28,24 +28,23 @@ func verifySignature(signedLance common.SignedLance) (bool, error) {
 }
 
 func handleLanceCandidate(lanceCanditate []byte) {
-	log.Printf("Novo lance validado:gsadgsajdbs ")
 	var signedLance common.SignedLance
 	signedLance.FromByteArray(lanceCanditate)
 
 	isValidSignature, err := verifySignature(signedLance)
 	if !isValidSignature {
-		log.Printf("[MS-LANCE] Erro ao verificar chave: %v", err)
+		log.Printf("[MS-LANCE] Erro ao verificar chave: %v\n", err)
 		return
 	}
 
 	activeLeilao, ok := activeLeiloes[signedLance.Lance.LeilaoID]
 	if !ok {
-		log.Printf("[MS-LANCE] Erro ao acessar leilão ativo %v", signedLance.Lance.LeilaoID)
+		log.Printf("[MS-LANCE] Erro ao acessar leilão ativo: %v\n", signedLance.Lance.LeilaoID)
 		return
 	}
 
 	if signedLance.Lance.Value <= activeLeilao.LastValidLance.Value {
-		log.Printf("[MS-LANCE] Lance não válido %v", signedLance.Lance)
+		log.Printf("[MS-LANCE] Lance não válido: \n%s\n", signedLance.Lance.Print())
 		return
 	}
 
@@ -57,12 +56,12 @@ func handleLanceCandidate(lanceCanditate []byte) {
 	common.FailOnError(err, "Error connecting to queue")
 	common.PublishInQueue(chOut, q, signedLance.Lance.ToByteArray(), common.QUEUE_LANCE_VALIDADO)
 
-	log.Printf("Novo lance validado: %v", signedLance.Lance)
+	log.Printf("Novo lance validado: \n%s\n", signedLance.Lance.Print())
 }
 
 func consomeLances(msgs <-chan amqp091.Delivery) {
 	for d := range msgs {
-		log.Printf("[MS-LANCE] NOVO LANCE: %s", d.Body)
+		// log.Printf("[MS-LANCE] NOVO LANCE: %s", d.Body)
 
 		go handleLanceCandidate(d.Body)
 
@@ -77,11 +76,13 @@ func handleLeilaoIniciado(leilaoByteArray []byte) {
 	activeLeiloes[leilao.ID] = common.ActiveLeilao{
 		Leilao: leilao,
 	}
+
+	log.Printf("[MS-LANCE] NOVO LEILÃO INICIADO: \n%s\n", leilao.Print())
 }
 
 func consumeLeiloesIniciados(msgs <-chan amqp091.Delivery) {
 	for d := range msgs {
-		log.Printf("[MS-LANCE] NOVO LEILAO INICIADO: %s", d.Body)
+		// log.Printf("[MS-LANCE] NOVO LEILAO INICIADO: %s", d.Body)
 
 		go handleLeilaoIniciado(d.Body)
 
@@ -104,12 +105,13 @@ func handleLeilaoFinalizado(leilaoByteArray []byte) {
 		}
 
 		delete(activeLeiloes, leilao.ID)
+		log.Printf("[MS-LEILAO] LEILÃO FINALIZADO: \n%s\n", leilao.Print())
 	}
 }
 
 func consumeLeiloesFinalizados(msgs <-chan amqp091.Delivery) {
 	for d := range msgs {
-		log.Printf("[MS-LANCE] NOVO LEILAO FINALIZADO: %s", d.Body)
+		// log.Printf("[MS-LANCE] NOVO LEILAO FINALIZADO: %s", d.Body)
 
 		go handleLeilaoFinalizado(d.Body)
 

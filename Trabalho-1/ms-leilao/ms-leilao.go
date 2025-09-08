@@ -9,7 +9,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/rabbitmq/amqp091-go"
 )
 
@@ -39,9 +38,7 @@ func createFileLeiloes(leiloes []common.Leilao) {
 		leilaoByteArray := leilao.ToByteArray()
 
 		file, err := os.Create(fmt.Sprintf("ms-leilao/data/leilao-%s.json", leilao.ID))
-		if err != nil {
-			common.FailOnError(err, "Erro ao criar arquivo")
-		}
+		common.FailOnError(err, "Erro ao criar arquivo")
 		defer file.Close()
 
 		file.Write(leilaoByteArray)
@@ -55,7 +52,7 @@ func publishWhenStarts(ch *amqp091.Channel, q amqp091.Queue, leiloes []common.Le
 			common.PublishInQueue(ch, q, first.ToByteArray(), common.QUEUE_LEILAO_INICIADO)
 			leiloes = append(leiloes[:0], leiloes[1:]...)
 
-			log.Printf("[MS-LEILAO] Published %s on %s\n\n", spew.Sdump(first), q.Name)
+			log.Printf("[MS-LEILAO] NOVO LEILÃO INICIADO: %s PUBLICADO NA FILA %s\n\n", first.Print(), q.Name)
 			common.CreateQueue("", ch)
 			if len(leiloes) == 0 {
 				break
@@ -72,7 +69,7 @@ func publishWhenFinishes(ch *amqp091.Channel, q amqp091.Queue, leiloes []common.
 			common.PublishInQueue(ch, q, first.ToByteArray(), common.QUEUE_LEILAO_FINALIZADO)
 			leiloes = append(leiloes[:0], leiloes[1:]...)
 
-			log.Printf("[MS-LEILAO] Published %s on %s", spew.Sdump(first), q.Name)
+			log.Printf("[MS-LEILAO] NOVO LEILÃO FINALIZADO %s PUBLICADO NA FILA %s\n\n", first.Print(), q.Name)
 			if len(leiloes) == 0 {
 				break
 			}

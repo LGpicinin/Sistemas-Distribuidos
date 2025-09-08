@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"log"
 )
 
@@ -71,4 +72,11 @@ func (lance *Lance) Sign(privateKey *rsa.PrivateKey) []byte {
 	}
 
 	return signature
+}
+
+func (lance *Lance) Print() string {
+	return "Lance:\n" +
+		"\tID do Leilão: " + lance.LeilaoID + "\n" +
+		"\tID do usuário: " + lance.UserID + "\n" +
+		"\tValor do Lance: R$ " + fmt.Sprintf("%f", lance.Value) + "\n"
 }

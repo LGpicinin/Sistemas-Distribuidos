@@ -12,7 +12,6 @@ import (
 
 	common "common"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/rabbitmq/amqp091-go"
 )
 
@@ -22,14 +21,18 @@ func consomeLeilaoIniciado(msgs <-chan amqp091.Delivery) {
 	for d := range msgs {
 		var leilao common.Leilao
 		leilao.FromByteArray(d.Body)
-		log.Printf("[MS-LEILAO] NOVO LEILÃO: %s", spew.Sdump(leilao))
+		log.Printf("[CLIENT] NOVO LEILÃO: %s", leilao.Print())
 		d.Ack(false)
 	}
 }
 
+func lanceReminder() {
+	fmt.Println("Caso deseje registrar um lance, pressione Enter. Caso deseje sair, aperte CTRL+C")
+}
+
 func hello() {
 	fmt.Println("========== Bem vindo ao UTFPR Leilões ==========")
-	fmt.Println("Caso deseje registrar um lance, pressione Enter. Caso deseje sair, aperte CTRL+C")
+	lanceReminder()
 }
 
 func handleNotificacao(notificacaoByteArray []byte) {
@@ -37,11 +40,11 @@ func handleNotificacao(notificacaoByteArray []byte) {
 	notificacao.FromByteArray(notificacaoByteArray)
 
 	if notificacao.Status == common.NovoLance {
-		log.Printf("[MS-LEILAO] NOVA NOTIFICAÇÃO LANCE: %s", spew.Sdump(notificacao))
+		log.Printf("[CLIENT] NOVO LANCE: \n%s\n", notificacao.Print())
 	} else {
 		delete(leiloesInteressados, notificacao.Lance.LeilaoID)
 
-		log.Printf("[MS-LEILAO] NOVA NOTIFICAÇÃO GANHADOR: %s", spew.Sdump(notificacao))
+		log.Printf("[CLIENT] NOVO GANHADOR: \n%s\n", notificacao.Print())
 	}
 
 }
@@ -77,6 +80,8 @@ func publishLance(q amqp091.Queue, ch *amqp091.Channel, leilaoId string, userId 
 
 		common.ConsumeEvents(q, ch, consomeLeilaoInteressado)
 	}
+
+	lanceReminder()
 }
 
 func menu(userId string, q amqp091.Queue, ch *amqp091.Channel, publicKey *rsa.PublicKey, privateKey *rsa.PrivateKey) {

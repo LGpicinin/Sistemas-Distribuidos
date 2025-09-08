@@ -37,6 +37,14 @@ func (leilao *Leilao) FromByteArray(byteArray []byte) {
 	FailOnError(err, "Erro ao converter []byte para leilao")
 }
 
+func (leilao *Leilao) Print() string {
+	return "Leilão:\n" +
+		"\tID: " + leilao.ID + "\n" +
+		"\tDescrição: " + leilao.Description + "\n" +
+		"\tData de início: " + leilao.StartDate.String() + "\n" +
+		"\tData de finalização: " + leilao.EndDate.String() + "\n"
+}
+
 type ByStartDate []Leilao
 
 func (a ByStartDate) Len() int           { return len(a) }
