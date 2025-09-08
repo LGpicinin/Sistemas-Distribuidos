@@ -22,6 +22,7 @@ func consomeLeilaoIniciado(msgs <-chan amqp091.Delivery) {
 		var leilao common.Leilao
 		leilao.FromByteArray(d.Body)
 		log.Printf("[CLIENT] NOVO LEILÃO: %s", leilao.Print())
+		lanceReminder()
 		d.Ack(false)
 	}
 }
@@ -46,7 +47,7 @@ func handleNotificacao(notificacaoByteArray []byte) {
 
 		log.Printf("[CLIENT] NOVO GANHADOR: \n%s\n", notificacao.Print())
 	}
-
+	lanceReminder()
 }
 
 func consomeLeilaoInteressado(msgs <-chan amqp091.Delivery) {
