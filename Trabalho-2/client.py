@@ -1,3 +1,6 @@
 from common.peer import Peer
+import sys
 
-Peer("client").be_greeted()
+
+
+Peer("PeerA").run()
