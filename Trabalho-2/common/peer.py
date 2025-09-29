@@ -4,12 +4,13 @@ from Pyro5 import nameserver
 from .static import NAMES
 from .states import States
 from datetime import datetime
-from time import time
+from time import time, sleep
 from threading import Thread
 
 class Peer:
     
     def __init__(self, name: str):
+        self.name = name
         self.daemon = None
         self.uri = None
         self.ns = None
@@ -17,19 +18,34 @@ class Peer:
         self.last_request_timestamp = None
         self.request_queue = []
         self.active_peers = {}
-
-        for n in NAMES:
-            if n != name:
-                self.active_peers[n] = time() + 60
+        self.time_peers = {}
+        self.response_peers = {}
 
         self.create_daemon()
         self.register_on_ns(name)
 
+        sleep(30)
+
+        for n in NAMES:
+            if n != name:
+                peer: Peer = Proxy(f"PYRONAME:{n}")
+                self.active_peers[n] = peer
+                self.time_peers[n] = time() + 60
+
+
     def create_daemon(self) -> None:
         self.daemon = Daemon()
         self.uri = self.daemon.register(self)
-
-
+    
+    def wait_response(self, peer): # necessário rever
+        peer = self.tranfer_proxy_to_this_thread(peer)
+        self.response_peers[peer.name] = peer.request_resource(self, self.last_request_timestamp)
+    
+    def tranfer_proxy_to_this_thread(self, proxy):
+        proxy._pyroClaimOwnership()
+        return proxy
+    
+    @expose
     @oneway
     def send_heartbeat(self) -> None:
         last_pulse = time() - 60
@@ -37,41 +53,57 @@ class Peer:
             if time() >= last_pulse + 30:
                 self.verificate_heartbeat()
 
-            for peer_name, peer_time in self.active_peers.items():
-                try:
-                    peer: Peer = Proxy(f"PYRONAME:{peer_name}")
-                    peer.receive_heartbeat(self.name)
-            
-                except:
-                    pass
+            for peer_name, peer in self.active_peers.items():
+                peer = self.tranfer_proxy_to_this_thread(peer)
+                peer.receive_heartbeat(self.name)
+
         last_pulse = time()
 
-
+    @expose
     @oneway       
     def receive_heartbeat(self, name) -> None:
-        self.active_peers[name] = time() + 60
+        self.time_peers[name] = time() + 60
 
 
     def verificate_heartbeat(self) -> None:
         peers_to_remove = []
-        for name, peer_time in self.active_peers.items():
+        for name, peer_time in self.time_peers.items():
             if peer_time < time():
                 peers_to_remove.append(name)
 
         for name in peers_to_remove:
             del self.active_peers[name]
+            del self.time_peers[name]
 
 
     def get_resource(self) -> None:
         self.state = States.WANTED
         self.last_request_timestamp = datetime.now()
 
-        for peer_name, peer_time in self.active_peers.items():
-            peer: Peer = Proxy(f"PYRONAME:{peer_name}")
-            if peer.request_resource(self, self.last_request_timestamp) == False:
-                break
+        peers_to_remove = []
+        
 
+        for peer_name, peer in self.active_peers.items():
+            try:
+                self.response_peers[peer_name] = 0
+                thread_wait = Thread(target=self.wait_response, args=(peer)) # necessário rever
+                thread_wait.start()
+                sleep(15)
+                if self.response_peers[peer_name] == 0:
+                    peers_to_remove.append(peer_name)
+                else:
+                    if self.response_peers[peer_name] == False:
+                        for name in peers_to_remove:
+                            del self.active_peers[name]
+                            del self.time_peers[name]
+                        return
+            except:
+                print(f"Tentativa de requisitar recurso para {peer_name} foi mal sucedida")
 
+        for name in peers_to_remove:
+            del self.active_peers[name]
+            del self.time_peers[name]
+        
         self.state = States.HELD
 
 
@@ -87,14 +119,20 @@ class Peer:
     def free_resouce(self) -> None:
         self.state = States.RELEASED
         next_peer, timestamp = self.request_queue.pop(0)
-        next_peer.receive_resource(self.request_queue)
-        self.request_queue = []
+        
+        # verifica se processo esta ativo
+        while next_peer.name not in self.active_peers.keys() and len(self.active_peers.keys()) != 0:
+            next_peer, timestamp = self.request_queue.pop(0)
+            
+        if next_peer.name in self.active_peers.keys():
+            next_peer = self.tranfer_proxy_to_this_thread(next_peer)
+            next_peer.receive_resource()
+            self.request_queue = []
 
-
+    @expose
     @oneway
-    def receive_resource(self, requests: list) -> None:
+    def receive_resource(self) -> None:
         self.state = States.HELD
-        self.request_queue = requests
 
 
     def register_on_ns(self, name: str) -> None:
@@ -108,7 +146,7 @@ class Peer:
 
     def list_active_peers(self) -> None:
         print("Peers ativos:")
-        for name, fail_time in self.active_peers.items():
+        for name, fail_time in self.time_peers.items():
             print(f"\t{name}: Último heartbeat em {fail_time - 60}")
             print()
 
@@ -138,7 +176,7 @@ class Peer:
 
                 case _:
                     print("Opção inexistente")
-                    menu()
+                    self.menu()
 
 
     def run(self) -> None:

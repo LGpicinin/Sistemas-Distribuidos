@@ -1,6 +1,6 @@
 from common.peer import Peer
 import sys
 
+name_peer = sys.argv[1]
 
-
-Peer("PeerA").run()
+Peer(name_peer).run()
