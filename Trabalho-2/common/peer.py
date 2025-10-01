@@ -31,19 +31,21 @@ class Peer:
                 peer: Peer = Proxy(f"PYRONAME:{n}")
                 self.active_peers[n] = peer
                 self.time_peers[n] = time() + 60
+                
 
 
     def create_daemon(self) -> None:
         self.daemon = Daemon()
         self.uri = self.daemon.register(self)
-    
-    def wait_response(self, peer): # necessário rever
-        peer = self.tranfer_proxy_to_this_thread(peer)
-        self.response_peers[peer.name] = peer.request_resource(self, self.last_request_timestamp)
-    
+
     def tranfer_proxy_to_this_thread(self, proxy):
         proxy._pyroClaimOwnership()
         return proxy
+    
+    def wait_response(self, peer_name) -> None:
+        peer: Peer = Proxy(f"PYRONAME:{peer_name}")
+        self.response_peers[peer_name] = peer.request_resource(self.name, self.last_request_timestamp)
+
     
     @expose
     @oneway
@@ -85,11 +87,12 @@ class Peer:
 
         for peer_name, peer in self.active_peers.items():
             try:
-                self.response_peers[peer_name] = 0
-                thread_wait = Thread(target=self.wait_response, args=(peer)) # necessário rever
+                self.response_peers[peer_name] = False
+                thread_wait = Thread(target=self.wait_response, kwargs={"peer_name": peer_name})
                 thread_wait.start()
-                sleep(15)
-                if self.response_peers[peer_name] == 0:
+                thread_wait.join(15)
+                
+                if thread_wait.is_alive():
                     peers_to_remove.append(peer_name)
                 else:
                     if self.response_peers[peer_name] == False:
@@ -111,21 +114,28 @@ class Peer:
     def request_resource(self, who, timestamp: datetime) -> None:
         if self.state == States.HELD or (self.state == States.WANTED and self.last_request_timestamp < timestamp):
             self.request_queue.append((who, timestamp))
+            print(self.request_queue)
             return False
         else:
             return True
 
     @expose
-    def free_resouce(self) -> None:
+    def free_resource(self) -> None:
         self.state = States.RELEASED
-        next_peer, timestamp = self.request_queue.pop(0)
+        peer_name, timestamp = self.request_queue.pop(0)
+
+        next_peer: Peer = Proxy(f"PYRONAME:{peer_name}")
+
+        print(peer_name)
+
+        print(self.active_peers.keys())
         
         # verifica se processo esta ativo
-        while next_peer.name not in self.active_peers.keys() and len(self.active_peers.keys()) != 0:
-            next_peer, timestamp = self.request_queue.pop(0)
+        while peer_name not in self.active_peers.keys() and len(self.active_peers.keys()) != 0:
+            peer_name, timestamp = self.request_queue.pop(0)
+            next_peer: Peer = Proxy(f"PYRONAME:{peer_name}")
             
-        if next_peer.name in self.active_peers.keys():
-            next_peer = self.tranfer_proxy_to_this_thread(next_peer)
+        if peer_name in self.active_peers.keys():
             next_peer.receive_resource()
             self.request_queue = []
 
@@ -153,6 +163,7 @@ class Peer:
 
     def menu(self) -> None:
         while True:
+            print(f"Estado Atual: {self.state}")
             print("Digite sua preferência:")
             print("\t1) Requisitar recurso")
             print("\t2) Liberar recurso")
