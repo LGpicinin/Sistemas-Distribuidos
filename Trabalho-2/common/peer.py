@@ -83,6 +83,8 @@ class Peer:
         self.last_request_timestamp = datetime.now()
 
         peers_to_remove = []
+
+        consegui_recurso = True
         
 
         for peer_name, peer in self.active_peers.items():
@@ -96,23 +98,21 @@ class Peer:
                     peers_to_remove.append(peer_name)
                 else:
                     if self.response_peers[peer_name] == False:
-                        for name in peers_to_remove:
-                            del self.active_peers[name]
-                            del self.time_peers[name]
-                        return
+                        consegui_recurso = False
             except:
                 print(f"Tentativa de requisitar recurso para {peer_name} foi mal sucedida")
 
         for name in peers_to_remove:
             del self.active_peers[name]
             del self.time_peers[name]
-        
-        self.state = States.HELD
+
+        if consegui_recurso == True:
+            self.state = States.HELD
 
 
     @expose
     def request_resource(self, who, timestamp: datetime) -> None:
-        if self.state == States.HELD or (self.state == States.WANTED and self.last_request_timestamp < timestamp):
+        if self.state == States.HELD or self.state == States.WANTED:
             self.request_queue.append((who, timestamp))
             print(self.request_queue)
             return False
@@ -174,10 +174,18 @@ class Peer:
 
             match option:
                 case "1":
-                    self.get_resource()
+                    if self.state == States.HELD:
+                        print("Você já está com o recurso.")
+                    elif self.state == States.WANTED:
+                        print("Recurso já foi requisitado, aguarde.")
+                    else:
+                        self.get_resource()
 
                 case "2":
-                    self.free_resource()
+                    if self.state != States.HELD:
+                        print("Não é possível liberar recurso.")
+                    else:
+                        self.free_resource()
 
                 case "3":
                     self.list_active_peers()
