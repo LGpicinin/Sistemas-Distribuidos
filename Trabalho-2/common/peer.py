@@ -157,7 +157,7 @@ class Peer:
     def list_active_peers(self) -> None:
         print("Peers ativos:")
         for name, fail_time in self.time_peers.items():
-            print(f"\t{name}: Último heartbeat em {fail_time - 60}")
+            print(f"\t{name}: Último heartbeat em {datetime.fromtimestamp(fail_time - 60).isoformat()}")
             print()
 
 
