@@ -38,12 +38,15 @@ class Peer:
         self.daemon = Daemon()
         self.uri = self.daemon.register(self)
 
+
     def tranfer_proxy_to_this_thread(self, proxy):
         proxy._pyroClaimOwnership()
         return proxy
     
+    
     def wait_response(self, peer_name) -> None:
         peer: Peer = Proxy(f"PYRONAME:{peer_name}")
+        print(f'Esperando resposta do Peer {peer_name}')
         self.response_peers[peer_name] = peer.request_resource(self.name, self.last_request_timestamp)
 
     
@@ -57,9 +60,12 @@ class Peer:
 
             for peer_name, peer in self.active_peers.items():
                 peer = self.tranfer_proxy_to_this_thread(peer)
-                peer.receive_heartbeat(self.name)
+                try:
+                    peer.receive_heartbeat(self.name)
+                except:
+                    pass
 
-        last_pulse = time()
+            last_pulse = time()
 
     @expose
     @oneway       
@@ -85,7 +91,6 @@ class Peer:
         peers_to_remove = []
 
         consegui_recurso = True
-        
 
         for peer_name, peer in self.active_peers.items():
             try:
@@ -103,46 +108,63 @@ class Peer:
                 print(f"Tentativa de requisitar recurso para {peer_name} foi mal sucedida")
 
         for name in peers_to_remove:
+            print(f'Peer {name} removido')
             del self.active_peers[name]
             del self.time_peers[name]
 
         if consegui_recurso == True:
-            self.state = States.HELD
+            print('Recurso obtido')
+            self.receive_resource()
 
 
     @expose
     def request_resource(self, who, timestamp: datetime) -> None:
-        if self.state == States.HELD or self.state == States.WANTED:
-            self.request_queue.append((who, timestamp))
-            print(self.request_queue)
-            return False
-        else:
-            return True
-
-    @expose
-    def free_resource(self) -> None:
-        self.state = States.RELEASED
-        peer_name, timestamp = self.request_queue.pop(0)
-
-        next_peer: Peer = Proxy(f"PYRONAME:{peer_name}")
-
-        print(peer_name)
-
-        print(self.active_peers.keys())
+        timestamp = datetime.fromisoformat(timestamp)
         
-        # verifica se processo esta ativo
-        while peer_name not in self.active_peers.keys() and len(self.active_peers.keys()) != 0:
+        if (self.last_request_timestamp == None):
+            return True
+        
+        if (
+            self.state == States.HELD or 
+            (
+                self.state == States.WANTED and 
+                self.last_request_timestamp < timestamp
+            )
+        ):
+            self.request_queue.append((who, timestamp))
+            return False
+        
+        return True
+
+
+    def free_resource(self) -> None:
+        if self.state != States.HELD:
+            return
+        
+        self.state = States.RELEASED
+        
+        if len(self.request_queue):
             peer_name, timestamp = self.request_queue.pop(0)
             next_peer: Peer = Proxy(f"PYRONAME:{peer_name}")
             
-        if peer_name in self.active_peers.keys():
-            next_peer.receive_resource()
-            self.request_queue = []
+            # verifica se processo esta ativo
+            while peer_name not in self.active_peers.keys() and len(self.active_peers.keys()) != 0:
+                peer_name, timestamp = self.request_queue.pop(0)
+                next_peer: Peer = Proxy(f"PYRONAME:{peer_name}")
+                
+            if peer_name in self.active_peers.keys():
+                next_peer.receive_resource()
+                self.request_queue = []
+            
+        print("Recurso liberado")
+
 
     @expose
     @oneway
     def receive_resource(self) -> None:
+        print('Recurso recebido')
         self.state = States.HELD
+        Thread(target=lambda: sleep(60) or self.free_resource()).start()
 
 
     def register_on_ns(self, name: str) -> None:
@@ -191,6 +213,7 @@ class Peer:
                     self.list_active_peers()
 
                 case "0":
+                    exit(0)
                     break
 
                 case _:
