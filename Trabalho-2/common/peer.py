@@ -20,17 +20,19 @@ class Peer:
         self.active_peers = {}
         self.time_peers = {}
         self.response_peers = {}
+        self.who_has_resource = None
 
         self.create_daemon()
         self.register_on_ns(name)
 
-        sleep(30)
+        sleep(15)
 
         for n in NAMES:
             if n != name:
                 peer: Peer = Proxy(f"PYRONAME:{n}")
                 self.active_peers[n] = peer
-                self.time_peers[n] = time() + 60
+                self.time_peers[n] = time() + 10
+                self.response_peers[n] = True
                 
 
 
@@ -55,22 +57,30 @@ class Peer:
     def send_heartbeat(self) -> None:
         last_pulse = time() - 60
         while True:
-            if time() >= last_pulse + 30:
+            if time() >= last_pulse + 5:
                 self.verificate_heartbeat()
+                last_pulse = time()
 
             for peer_name, peer in self.active_peers.items():
                 peer = self.tranfer_proxy_to_this_thread(peer)
                 try:
                     peer.receive_heartbeat(self.name)
+                    if peer.has_resource():
+                        self.who_has_resource = peer_name
                 except:
                     pass
+                    
 
-            last_pulse = time()
+    @expose
+    @oneway
+    def has_resource(self):
+        return self.state == States.HELD
+
 
     @expose
     @oneway       
     def receive_heartbeat(self, name) -> None:
-        self.time_peers[name] = time() + 60
+        self.time_peers[name] = time() + 5
 
 
     def verificate_heartbeat(self) -> None:
@@ -80,8 +90,13 @@ class Peer:
                 peers_to_remove.append(name)
 
         for name in peers_to_remove:
+            print(f'Peer {name} removido')    
             del self.active_peers[name]
             del self.time_peers[name]
+            del self.response_peers[name]
+            print(f'{name=}, {self.who_has_resource=}, {self.state=}, {self.response_peers}')
+            if self.state == States.WANTED and all(self.response_peers.values()):
+                self.receive_resource()
 
 
     def get_resource(self) -> None:
@@ -94,23 +109,29 @@ class Peer:
 
         for peer_name, peer in self.active_peers.items():
             try:
-                self.response_peers[peer_name] = False
                 thread_wait = Thread(target=self.wait_response, kwargs={"peer_name": peer_name})
                 thread_wait.start()
                 thread_wait.join(15)
-                
+
                 if thread_wait.is_alive():
                     peers_to_remove.append(peer_name)
                 else:
                     if self.response_peers[peer_name] == False:
+                        peer = self.tranfer_proxy_to_this_thread(peer)
+                        if peer.has_resource():
+                            self.who_has_resource = peer_name
                         consegui_recurso = False
-            except:
+            except Exception as E:
+                print(E)
                 print(f"Tentativa de requisitar recurso para {peer_name} foi mal sucedida")
 
         for name in peers_to_remove:
             print(f'Peer {name} removido')
             del self.active_peers[name]
             del self.time_peers[name]
+            del self.response_peers[name]
+            if self.state == States.WANTED and all(self.response_peers.values()):
+                self.receive_resource()
 
         if consegui_recurso == True:
             print('Recurso obtido')
@@ -164,7 +185,8 @@ class Peer:
     def receive_resource(self) -> None:
         print('Recurso recebido')
         self.state = States.HELD
-        Thread(target=lambda: sleep(60) or self.free_resource()).start()
+        Thread(target=lambda: (sleep(10) or self.free_resource())).start()
+        self.who_has_resource = self.name
 
 
     def register_on_ns(self, name: str) -> None:
