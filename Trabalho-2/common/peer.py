@@ -172,10 +172,22 @@ class Peer:
             while peer_name not in self.active_peers.keys() and len(self.active_peers.keys()) != 0:
                 peer_name, timestamp = self.request_queue.pop(0)
                 next_peer: Peer = Proxy(f"PYRONAME:{peer_name}")
-                
+            
+            # entrega recurso para o primeiro peer da fila
             if peer_name in self.active_peers.keys():
                 next_peer.receive_resource()
-                self.request_queue = []
+
+            # manda ok para os outros peers
+            for peer_name in self.request_queue:
+                if peer_name in self.active_peers.keys():
+                    try:
+                        peer: Peer = Proxy(f"PYRONAME:{peer_name}")
+                        peer.receive_ok(self.name)
+                    except:
+                        pass
+            
+            self.request_queue = []
+
             
         print("Recurso liberado")
 
@@ -187,6 +199,11 @@ class Peer:
         self.state = States.HELD
         Thread(target=lambda: (sleep(10) or self.free_resource())).start()
         self.who_has_resource = self.name
+
+    @expose
+    @oneway
+    def receive_ok(self, peer_name : str) -> None:
+        self.response_peers[peer_name] = True
 
 
     def register_on_ns(self, name: str) -> None:
