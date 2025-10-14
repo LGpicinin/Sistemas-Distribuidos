@@ -178,9 +178,11 @@ class Peer:
                 next_peer.receive_resource()
 
             # manda ok para os outros peers
-            for peer_name in self.request_queue:
+            print("Liberando request queue")
+            for peer_name, timestamp in self.request_queue:
                 if peer_name in self.active_peers.keys():
                     try:
+                        print(f"Dando ok para o {peer_name}")
                         peer: Peer = Proxy(f"PYRONAME:{peer_name}")
                         peer.receive_ok(self.name)
                     except:
@@ -203,7 +205,9 @@ class Peer:
     @expose
     @oneway
     def receive_ok(self, peer_name : str) -> None:
+        print(f"Recebendo ok de {peer_name}")
         self.response_peers[peer_name] = True
+        print(f"Response queue atualizada: {self.response_peers.values()}")
 
 
     def register_on_ns(self, name: str) -> None:
