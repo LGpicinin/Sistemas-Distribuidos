@@ -164,20 +164,8 @@ class Peer:
         
         self.state = States.RELEASED
         
-        if len(self.request_queue):
-            peer_name, timestamp = self.request_queue.pop(0)
-            next_peer: Peer = Proxy(f"PYRONAME:{peer_name}")
-            
-            # verifica se processo esta ativo
-            while peer_name not in self.active_peers.keys() and len(self.active_peers.keys()) != 0:
-                peer_name, timestamp = self.request_queue.pop(0)
-                next_peer: Peer = Proxy(f"PYRONAME:{peer_name}")
-            
-            # entrega recurso para o primeiro peer da fila
-            if peer_name in self.active_peers.keys():
-                next_peer.receive_resource()
-
-            # manda ok para os outros peers
+        if len(self.request_queue) > 0:
+            # manda ok para os peers da fila
             print("Liberando request queue")
             for peer_name, timestamp in self.request_queue:
                 if peer_name in self.active_peers.keys():
@@ -188,7 +176,7 @@ class Peer:
                     except:
                         pass
             
-            self.request_queue = []
+        self.request_queue = []
 
             
         print("Recurso liberado")
@@ -208,6 +196,8 @@ class Peer:
         print(f"Recebendo ok de {peer_name}")
         self.response_peers[peer_name] = True
         print(f"Response queue atualizada: {self.response_peers.values()}")
+        if all(self.response_peers.values()):
+            self.receive_resource()
 
 
     def register_on_ns(self, name: str) -> None:
