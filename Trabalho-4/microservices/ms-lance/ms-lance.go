@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 
+	"net/http"
+
 	"github.com/rabbitmq/amqp091-go"
 )
 
@@ -17,6 +19,9 @@ var connOut *amqp091.Connection
 var chOut *amqp091.Channel
 
 var activeLeiloes map[string]common.ActiveLeilao
+
+type createHandler struct{}
+type listHandler struct{}
 
 func verifySignature(signedLance common.SignedLance) (bool, error) {
 	hashedLance := signedLance.Lance.Hash()
@@ -119,6 +124,14 @@ func consumeLeiloesFinalizados(msgs <-chan amqp091.Delivery) {
 	}
 }
 
+func (h *createHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("This is my home page"))
+}
+
+func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("This is my home page"))
+}
+
 func main() {
 	connIn, chIn = common.ConnectToBroker()
 	defer connIn.Close()
@@ -127,6 +140,14 @@ func main() {
 	connOut, chOut = common.ConnectToBroker()
 	defer connOut.Close()
 	defer chOut.Close()
+
+	// Create a new request multiplexer
+	// Take incoming requests and dispatch them to the matching handlers
+	mux := http.NewServeMux()
+
+	// Register the routes and handlers
+	mux.Handle("/create", &createHandler{})
+	mux.Handle("/list", &listHandler{})
 
 	activeLeiloes = make(map[string]common.ActiveLeilao)
 
@@ -141,6 +162,8 @@ func main() {
 	qLeiloesFinalizados, err := common.CreateOrGetQueueAndBind("", common.QUEUE_LEILAO_FINALIZADO, chIn)
 	common.FailOnError(err, "Error connecting to queue")
 	common.ConsumeEvents(qLeiloesFinalizados, chIn, consumeLeiloesFinalizados)
+
+	http.ListenAndServe(":8080", mux)
 
 	var forever chan struct{}
 	<-forever
