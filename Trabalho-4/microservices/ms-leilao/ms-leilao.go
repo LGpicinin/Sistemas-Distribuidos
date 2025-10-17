@@ -4,7 +4,11 @@ import (
 	common "common"
 	"container/list"
 	"encoding/json"
+	"fmt"
 	"log"
+	"reflect"
+
+	// dto "ms-leilao/DTO"
 	"net/http"
 	"time"
 
@@ -12,56 +16,91 @@ import (
 )
 
 var activeLeiloes *list.List = list.New()
-
-// var leiloes []common.Leilao
 var leiloesSortedByStart *list.List = list.New()
-
-// var leiloesSortedByStart []common.Leilao
 var leiloesSortedByEnd *list.List = list.New()
-
-// var leiloesSortedByEnd []common.Leilao
 
 type createHandler struct{}
 type listHandler struct{}
 
+func insertionSortOnList(leilaoList *list.List, value common.Leilao, fieldToCompare string) {
+
+	r := reflect.ValueOf(value)
+	fieldValue := reflect.Indirect(r).FieldByName(fieldToCompare).Interface().(time.Time)
+
+	if leilaoList.Len() == 0 {
+		leilaoList.PushBack(value)
+	} else {
+		var k *list.Element = nil
+		for e := leilaoList.Front(); e != nil; e = e.Next() {
+			e_r := reflect.ValueOf(e.Value.(common.Leilao))
+			e_value := reflect.Indirect(e_r).FieldByName(fieldToCompare).Interface().(time.Time)
+
+			if e_value.Compare(fieldValue) > 0 {
+				k = e
+				break
+			}
+		}
+		if k != nil {
+			leilaoList.InsertBefore(value, k)
+		} else {
+			leilaoList.PushBack(value)
+		}
+	}
+}
+
 func publishWhenStarts(ch *amqp091.Channel, q amqp091.Queue, leiloes *list.List) {
 	for {
-		if leiloes.Len() > 0 {
-			for first := leiloes.Front(); ; first = leiloes.Front() {
-				firstLeilao := first.Value.(common.Leilao)
-				if time.Now().Compare(firstLeilao.StartDate) >= 0 {
-					common.PublishInQueue(ch, q, firstLeilao.ToByteArray(), common.QUEUE_LEILAO_INICIADO)
-					activeLeiloes.PushBack(first)
-					leiloes.Remove(first)
+		if leiloes.Len() == 0 {
+			continue
+		}
 
-					log.Printf("[MS-LEILAO] NOVO LEILÃO INICIADO: %s PUBLICADO NA FILA %s\n\n", firstLeilao.Print(), q.Name)
-					common.CreateQueue("", ch)
-					if leiloes.Len() == 0 {
-						break
-					}
-				}
+		for first := leiloes.Front(); ; first = leiloes.Front() {
+			firstLeilao := first.Value.(common.Leilao)
+
+			if time.Now().Compare(firstLeilao.StartDate) < 0 {
+				continue
+			}
+
+			common.PublishInQueue(ch, q, firstLeilao.ToByteArray(), common.QUEUE_LEILAO_INICIADO)
+			activeLeiloes.PushBack(first.Value.(common.Leilao))
+			leiloes.Remove(first)
+
+			log.Printf("[MS-LEILAO] NOVO LEILÃO INICIADO: %s PUBLICADO NA FILA %s\n\n", firstLeilao.Print(), q.Name)
+			if leiloes.Len() == 0 {
+				break
 			}
 		}
 	}
-
 }
 
 func publishWhenFinishes(ch *amqp091.Channel, q amqp091.Queue, leiloes *list.List) {
 	for {
-		if leiloes.Len() > 0 {
-			for first := leiloes.Front(); ; first = leiloes.Front() {
-				firstLeilao := first.Value.(common.Leilao)
-				if time.Now().Compare(firstLeilao.EndDate) >= 0 {
-					common.PublishInQueue(ch, q, firstLeilao.ToByteArray(), common.QUEUE_LEILAO_FINALIZADO)
-					leiloes.Remove(first)
+		if leiloes.Len() == 0 {
+			continue
+		}
 
-					log.Printf("[MS-LEILAO] NOVO LEILÃO FINALIZADO %s PUBLICADO NA FILA %s\n\n", firstLeilao.Print(), q.Name)
-					if leiloes.Len() == 0 {
-						break
-					}
+		for first := leiloes.Front(); ; first = leiloes.Front() {
+			firstLeilao := first.Value.(common.Leilao)
+
+			if time.Now().Compare(firstLeilao.StartDate) < 0 {
+				continue
+			}
+
+			common.PublishInQueue(ch, q, firstLeilao.ToByteArray(), common.QUEUE_LEILAO_FINALIZADO)
+			leiloes.Remove(first)
+			for a := activeLeiloes.Front(); a != nil; a = a.Next() {
+				if a.Value.(common.Leilao) == first.Value.(common.Leilao) {
+					activeLeiloes.Remove(a)
+					break
 				}
 			}
+
+			log.Printf("[MS-LEILAO] NOVO LEILÃO FINALIZADO %s PUBLICADO NA FILA %s\n\n", firstLeilao.Print(), q.Name)
+			if leiloes.Len() == 0 {
+				break
+			}
 		}
+
 	}
 }
 
@@ -70,42 +109,29 @@ func (h *createHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&leilao)
 	if err != nil {
+		log.Printf("Erro ao decodificar requisição: %v\n", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	if leiloesSortedByStart.Len() == 0 {
-		leiloesSortedByStart.PushBack(leilao)
-	} else {
-		var k *list.Element
-		for e := leiloesSortedByStart.Front(); e != nil; e = e.Next() {
-			if e.Value.(common.Leilao).StartDate.Compare(leilao.StartDate) > 0 {
-				k = e
-				break
-			}
-		}
-		leiloesSortedByStart.InsertBefore(leilao, k)
-	}
-
-	if leiloesSortedByEnd.Len() == 0 {
-		leiloesSortedByEnd.PushBack(leilao)
-	} else {
-		var k *list.Element
-		for e := leiloesSortedByEnd.Front(); e != nil; e = e.Next() {
-			if e.Value.(common.Leilao).StartDate.Compare(leilao.StartDate) < 0 {
-				k = e
-				break
-			}
-		}
-		leiloesSortedByEnd.InsertBefore(leilao, k)
-	}
+	insertionSortOnList(leiloesSortedByStart, leilao, "StartDate")
+	insertionSortOnList(leiloesSortedByEnd, leilao, "EndDate")
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write(leilao.ToByteArray())
+	w.Header().Set("Content-type", "application/json")
+	json.NewEncoder(w).Encode(leilao)
 }
 
 func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("This is my home page"))
+	var leiloes []common.Leilao
+
+	for e := activeLeiloes.Front(); e != nil; e = e.Next() {
+		value := e.Value.(common.Leilao)
+		leiloes = append(leiloes, value)
+	}
+
+	w.Header().Set("Content-type", "application/json")
+	json.NewEncoder(w).Encode(leiloes)
 }
 
 func main() {
@@ -130,6 +156,6 @@ func main() {
 
 	go publishWhenFinishes(ch, qFinalizado, leiloesSortedByEnd)
 
+	fmt.Println("Server running on http://localhost:8090")
 	http.ListenAndServe(":8090", mux)
-
 }
