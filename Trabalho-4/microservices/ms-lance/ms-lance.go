@@ -2,8 +2,6 @@ package main
 
 import (
 	common "common"
-	"crypto"
-	"crypto/rsa"
 	"fmt"
 	"log"
 
@@ -23,45 +21,36 @@ var activeLeiloes map[string]common.ActiveLeilao = make(map[string]common.Active
 type createHandler struct{}
 type listHandler struct{}
 
-func verifySignature(signedLance common.SignedLance) (bool, error) {
-	hashedLance := signedLance.Lance.Hash()
-
-	publicKey, _ := common.ReadAndParseKey(fmt.Sprintf("ms-lance/keys/public/%s.pem", signedLance.Lance.UserID))
-
-	err := rsa.VerifyPKCS1v15(publicKey, crypto.SHA256, hashedLance, signedLance.Signature)
-	return err == nil, err
-}
-
 func handleLanceCandidate(lanceCanditate []byte) {
-	var signedLance common.SignedLance
-	signedLance.FromByteArray(lanceCanditate)
+	var lance common.Lance
+	lance.FromByteArray(lanceCanditate)
 
-	isValidSignature, err := verifySignature(signedLance)
-	if !isValidSignature {
-		log.Printf("[MS-LANCE] Erro ao verificar chave: %v\n", err)
-		return
-	}
-
-	activeLeilao, ok := activeLeiloes[signedLance.Lance.LeilaoID]
+	activeLeilao, ok := activeLeiloes[lance.LeilaoID]
 	if !ok {
-		log.Printf("[MS-LANCE] Erro ao acessar leilão ativo: %v\n", signedLance.Lance.LeilaoID)
+		log.Printf("[MS-LANCE] Erro ao acessar leilão ativo: %v\n", lance.LeilaoID)
 		return
 	}
 
-	if signedLance.Lance.Value <= activeLeilao.LastValidLance.Value {
-		log.Printf("[MS-LANCE] Lance não válido: \n%s\n", signedLance.Lance.Print())
+	if lance.Value <= activeLeilao.LastValidLance.Value {
+		log.Printf("[MS-LANCE] Lance não válido: \n%s\n", lance.Print())
+
+		q, err := common.CreateOrGetQueueAndBind(
+			common.QUEUE_LANCE_INVALIDADO, common.QUEUE_LANCE_INVALIDADO, chIn,
+		)
+		common.FailOnError(err, "Error connecting to queue")
+		common.PublishInQueue(chOut, q, lance.ToByteArray(), common.QUEUE_LANCE_INVALIDADO)
 		return
 	}
 
-	activeLeilao.LastValidLance = signedLance.Lance
+	activeLeilao.LastValidLance = lance
 
-	activeLeiloes[signedLance.Lance.LeilaoID] = activeLeilao
+	activeLeiloes[lance.LeilaoID] = activeLeilao
 
 	q, err := common.CreateOrGetQueueAndBind(common.QUEUE_LANCE_VALIDADO, common.QUEUE_LANCE_VALIDADO, chIn)
 	common.FailOnError(err, "Error connecting to queue")
-	common.PublishInQueue(chOut, q, signedLance.Lance.ToByteArray(), common.QUEUE_LANCE_VALIDADO)
+	common.PublishInQueue(chOut, q, lance.ToByteArray(), common.QUEUE_LANCE_VALIDADO)
 
-	log.Printf("Novo lance validado: \n%s\n", signedLance.Lance.Print())
+	log.Printf("Novo lance validado: \n%s\n", lance.Print())
 }
 
 func consomeLances(msgs <-chan amqp091.Delivery) {
@@ -110,7 +99,7 @@ func handleLeilaoFinalizado(leilaoByteArray []byte) {
 		}
 
 		delete(activeLeiloes, leilao.ID)
-		log.Printf("[MS-LEILAO] LEILÃO FINALIZADO: \n%s\n", leilao.Print())
+		log.Printf("[MS-LANCE] LEILÃO FINALIZADO: \n%s\n", leilao.Print())
 	}
 }
 
@@ -161,8 +150,6 @@ func main() {
 	common.FailOnError(err, "Error connecting to queue")
 	common.ConsumeEvents(qLeiloesFinalizados, chIn, consumeLeiloesFinalizados)
 
+	fmt.Println("Server running on http://localhost:8080")
 	http.ListenAndServe(":8080", mux)
-
-	var forever chan struct{}
-	<-forever
 }
