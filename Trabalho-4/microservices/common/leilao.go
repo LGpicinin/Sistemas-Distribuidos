@@ -37,6 +37,14 @@ func (leilao *Leilao) FromByteArray(byteArray []byte) {
 	FailOnError(err, "Erro ao converter []byte para leilao")
 }
 
+func (leilao *Leilao) HasStarted() bool {
+	return time.Now().Compare(leilao.StartDate) >= 0
+}
+
+func (leilao *Leilao) HasEnded() bool {
+	return time.Now().Compare(leilao.EndDate) >= 0
+}
+
 func (leilao *Leilao) Print() string {
 	return "Leilão:\n" +
 		"\tID: " + leilao.ID + "\n" +

@@ -48,63 +48,58 @@ func insertionSortOnList(leilaoList *list.List, value common.Leilao, fieldToComp
 	}
 }
 
-func publishWhenStarts(ch *amqp091.Channel, q amqp091.Queue, leiloes *list.List) {
+func publishWhenStarts(ch *amqp091.Channel, q amqp091.Queue) {
 	for {
-		if leiloes.Len() == 0 {
+		if leiloesSortedByStart.Len() == 0 {
 			continue
 		}
 
-		for first := leiloes.Front(); ; first = leiloes.Front() {
-			firstLeilao := first.Value.(common.Leilao)
+		first := leiloesSortedByStart.Front()
+		firstLeilao := first.Value.(common.Leilao)
 
-			if time.Now().Compare(firstLeilao.StartDate) < 0 {
-				continue
-			}
-
-			common.PublishInQueue(ch, q, firstLeilao.ToByteArray(), common.QUEUE_LEILAO_INICIADO)
-			activeLeiloes.PushBack(first.Value.(common.Leilao))
-			leiloes.Remove(first)
-
-			log.Printf("[MS-LEILAO] NOVO LEILÃO INICIADO: %s PUBLICADO NA FILA %s\n\n", firstLeilao.Print(), q.Name)
-			if leiloes.Len() == 0 {
-				break
-			}
+		if !firstLeilao.HasStarted() {
+			continue
 		}
+
+		common.PublishInQueue(ch, q, firstLeilao.ToByteArray(), common.QUEUE_LEILAO_INICIADO)
+		activeLeiloes.PushBack(first.Value.(common.Leilao))
+		leiloesSortedByStart.Remove(first)
+
+		log.Printf("[MS-LEILAO] NOVO LEILÃO INICIADO: %s PUBLICADO NA FILA %s\n\n", firstLeilao.Print(), q.Name)
 	}
 }
 
-func publishWhenFinishes(ch *amqp091.Channel, q amqp091.Queue, leiloes *list.List) {
+func publishWhenFinishes(ch *amqp091.Channel, q amqp091.Queue) {
 	for {
-		if leiloes.Len() == 0 {
+		if leiloesSortedByEnd.Len() == 0 {
 			continue
 		}
 
-		for first := leiloes.Front(); ; first = leiloes.Front() {
-			firstLeilao := first.Value.(common.Leilao)
+		first := leiloesSortedByEnd.Front()
+		firstLeilao := first.Value.(common.Leilao)
 
-			if time.Now().Compare(firstLeilao.StartDate) < 0 {
-				continue
-			}
+		if !firstLeilao.HasEnded() {
+			continue
+		}
 
-			common.PublishInQueue(ch, q, firstLeilao.ToByteArray(), common.QUEUE_LEILAO_FINALIZADO)
-			leiloes.Remove(first)
-			for a := activeLeiloes.Front(); a != nil; a = a.Next() {
-				if a.Value.(common.Leilao) == first.Value.(common.Leilao) {
-					activeLeiloes.Remove(a)
-					break
-				}
-			}
-
-			log.Printf("[MS-LEILAO] NOVO LEILÃO FINALIZADO %s PUBLICADO NA FILA %s\n\n", firstLeilao.Print(), q.Name)
-			if leiloes.Len() == 0 {
+		common.PublishInQueue(ch, q, firstLeilao.ToByteArray(), common.QUEUE_LEILAO_FINALIZADO)
+		leiloesSortedByEnd.Remove(first)
+		for a := activeLeiloes.Front(); a != nil; a = a.Next() {
+			if a.Value.(common.Leilao) == first.Value.(common.Leilao) {
+				activeLeiloes.Remove(a)
 				break
 			}
 		}
 
+		log.Printf("[MS-LEILAO] NOVO LEILÃO FINALIZADO %s PUBLICADO NA FILA %s\n\n", firstLeilao.Print(), q.Name)
 	}
 }
 
 func (h *createHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
 	var leilao common.Leilao
 
 	err := json.NewDecoder(r.Body).Decode(&leilao)
@@ -123,6 +118,11 @@ func (h *createHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	var leiloes []common.Leilao
 
 	for e := activeLeiloes.Front(); e != nil; e = e.Next() {
@@ -144,17 +144,13 @@ func main() {
 	qFinalizado, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_FINALIZADO, common.QUEUE_LEILAO_FINALIZADO, ch)
 	common.FailOnError(err, "Error connecting to queue")
 
-	// Create a new request multiplexer
-	// Take incoming requests and dispatch them to the matching handlers
 	mux := http.NewServeMux()
 
-	// Register the routes and handlers
 	mux.Handle("/create", &createHandler{})
 	mux.Handle("/list", &listHandler{})
 
-	go publishWhenStarts(ch, qIniciado, leiloesSortedByStart)
-
-	go publishWhenFinishes(ch, qFinalizado, leiloesSortedByEnd)
+	go publishWhenStarts(ch, qIniciado)
+	go publishWhenFinishes(ch, qFinalizado)
 
 	fmt.Println("Server running on http://localhost:8090")
 	http.ListenAndServe(":8090", mux)
