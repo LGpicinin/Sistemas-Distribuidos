@@ -141,7 +141,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Register the routes and handlers
-	mux.Handle("/create", &newLanceHandler{})
+	mux.Handle("/new", &newLanceHandler{})
 
 	qLeiloesIniciados, err := common.CreateOrGetQueueAndBind("", common.QUEUE_LEILAO_INICIADO, chIn)
 	common.FailOnError(err, "Error connecting to queue")
