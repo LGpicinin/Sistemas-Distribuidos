@@ -137,14 +137,12 @@ func main() {
 	qFinalizado, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_FINALIZADO, common.QUEUE_LEILAO_FINALIZADO, ch)
 	common.FailOnError(err, "Error connecting to queue")
 
-	mux := http.NewServeMux()
-
-	mux.Handle("/create", &createLeilaoHandler{})
-	mux.Handle("/list", &listLeilaoHandler{})
-
 	go publishWhenStarts(ch, qIniciado)
 	go publishWhenFinishes(ch, qFinalizado)
 
+	mux := http.NewServeMux()
+	mux.Handle("/create", &createLeilaoHandler{})
+	mux.Handle("/list", &listLeilaoHandler{})
 	fmt.Println("Server running on http://localhost:8090")
 	http.ListenAndServe(":8090", mux)
 }

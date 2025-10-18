@@ -89,6 +89,7 @@ func handleLeilaoFinalizado(leilaoByteArray []byte) {
 			common.FailOnError(err, "Error connecting to queue")
 
 			common.PublishInQueue(chOut, q, lastLance.ToByteArray(), common.QUEUE_LEILAO_VENCEDOR)
+			log.Printf("[MS-LANCE] NOVO VENCEDOR: \n%s\n", lastLance.Print())
 		}
 
 		delete(activeLeiloes, leilao.ID)
@@ -136,13 +137,6 @@ func main() {
 	defer connOut.Close()
 	defer chOut.Close()
 
-	// Create a new request multiplexer
-	// Take incoming requests and dispatch them to the matching handlers
-	mux := http.NewServeMux()
-
-	// Register the routes and handlers
-	mux.Handle("/new", &newLanceHandler{})
-
 	qLeiloesIniciados, err := common.CreateOrGetQueueAndBind("", common.QUEUE_LEILAO_INICIADO, chIn)
 	common.FailOnError(err, "Error connecting to queue")
 	common.ConsumeEvents(qLeiloesIniciados, chIn, consumeLeiloesIniciados)
@@ -151,6 +145,8 @@ func main() {
 	common.FailOnError(err, "Error connecting to queue")
 	common.ConsumeEvents(qLeiloesFinalizados, chIn, consumeLeiloesFinalizados)
 
+	mux := http.NewServeMux()
+	mux.Handle("/new", &newLanceHandler{})
 	fmt.Println("Server running on http://localhost:8080")
 	http.ListenAndServe(":8080", mux)
 }
