@@ -18,8 +18,7 @@ var chOut *amqp091.Channel
 
 var activeLeiloes map[string]common.ActiveLeilao = make(map[string]common.ActiveLeilao)
 
-type createHandler struct{}
-type listHandler struct{}
+type newLanceHandler struct{}
 
 func handleLanceCandidate(lanceCanditate []byte) {
 	var lance common.Lance
@@ -113,11 +112,7 @@ func consumeLeiloesFinalizados(msgs <-chan amqp091.Delivery) {
 	}
 }
 
-func (h *createHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("This is my home page"))
-}
-
-func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *newLanceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("This is my home page"))
 }
 
@@ -135,8 +130,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Register the routes and handlers
-	mux.Handle("/create", &createHandler{})
-	mux.Handle("/list", &listHandler{})
+	mux.Handle("/create", &newLanceHandler{})
 
 	qLance, err := common.CreateOrGetQueueAndBind(common.QUEUE_LANCE_REALIZADO, common.QUEUE_LANCE_REALIZADO, chIn)
 	common.FailOnError(err, "Error connecting to queue")

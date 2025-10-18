@@ -19,8 +19,8 @@ var activeLeiloes map[string]common.Leilao = make(map[string]common.Leilao)
 var leiloesSortedByStart *list.List = list.New()
 var leiloesSortedByEnd *list.List = list.New()
 
-type createHandler struct{}
-type listHandler struct{}
+type createLeilaoHandler struct{}
+type listLeilaoHandler struct{}
 
 func insertionSortOnList(leilaoList *list.List, value common.Leilao, fieldToCompare string) {
 
@@ -90,7 +90,7 @@ func publishWhenFinishes(ch *amqp091.Channel, q amqp091.Queue) {
 	}
 }
 
-func (h *createHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *createLeilaoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -112,7 +112,7 @@ func (h *createHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(leilao)
 }
 
-func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *listLeilaoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -139,8 +139,8 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.Handle("/create", &createHandler{})
-	mux.Handle("/list", &listHandler{})
+	mux.Handle("/create", &createLeilaoHandler{})
+	mux.Handle("/list", &listLeilaoHandler{})
 
 	go publishWhenStarts(ch, qIniciado)
 	go publishWhenFinishes(ch, qFinalizado)
