@@ -1,3 +1,5 @@
+using Routes;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -11,6 +13,12 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+Lance lanceRouter = new Lance();
+Leilao leilaoRouter = new Leilao();
+
+lanceRouter.SetupRoutes(app);
+leilaoRouter.SetupRoutes(app);
 
 // app.UseHttpsRedirection();
 
