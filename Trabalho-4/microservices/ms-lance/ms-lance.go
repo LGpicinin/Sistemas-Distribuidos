@@ -2,6 +2,7 @@ package main
 
 import (
 	common "common"
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -20,46 +21,37 @@ var activeLeiloes map[string]common.ActiveLeilao = make(map[string]common.Active
 
 type newLanceHandler struct{}
 
-func handleLanceCandidate(lanceCanditate []byte) {
-	var lance common.Lance
-	lance.FromByteArray(lanceCanditate)
-
-	activeLeilao, ok := activeLeiloes[lance.LeilaoID]
+func handleLanceCandidate(lanceCandidate common.Lance) {
+	activeLeilao, ok := activeLeiloes[lanceCandidate.LeilaoID]
 	if !ok {
-		log.Printf("[MS-LANCE] Erro ao acessar leilão ativo: %v\n", lance.LeilaoID)
+		log.Printf("[MS-LANCE] Erro ao acessar leilão ativo: %v\n", lanceCandidate.LeilaoID)
 		return
 	}
 
-	if lance.Value <= activeLeilao.LastValidLance.Value {
-		log.Printf("[MS-LANCE] Lance não válido: \n%s\n", lance.Print())
+	if lanceCandidate.Value <= activeLeilao.LastValidLance.Value {
+		log.Printf("[MS-LANCE] Lance não válido: \n%s\n", lanceCandidate.Print())
 
 		q, err := common.CreateOrGetQueueAndBind(
 			common.QUEUE_LANCE_INVALIDADO, common.QUEUE_LANCE_INVALIDADO, chIn,
 		)
 		common.FailOnError(err, "Error connecting to queue")
-		common.PublishInQueue(chOut, q, lance.ToByteArray(), common.QUEUE_LANCE_INVALIDADO)
+		common.PublishInQueue(
+			chOut, q, lanceCandidate.ToByteArray(), common.QUEUE_LANCE_INVALIDADO,
+		)
 		return
 	}
 
-	activeLeilao.LastValidLance = lance
+	activeLeilao.LastValidLance = lanceCandidate
 
-	activeLeiloes[lance.LeilaoID] = activeLeilao
+	activeLeiloes[lanceCandidate.LeilaoID] = activeLeilao
 
-	q, err := common.CreateOrGetQueueAndBind(common.QUEUE_LANCE_VALIDADO, common.QUEUE_LANCE_VALIDADO, chIn)
+	q, err := common.CreateOrGetQueueAndBind(
+		common.QUEUE_LANCE_VALIDADO, common.QUEUE_LANCE_VALIDADO, chIn,
+	)
 	common.FailOnError(err, "Error connecting to queue")
-	common.PublishInQueue(chOut, q, lance.ToByteArray(), common.QUEUE_LANCE_VALIDADO)
+	common.PublishInQueue(chOut, q, lanceCandidate.ToByteArray(), common.QUEUE_LANCE_VALIDADO)
 
-	log.Printf("Novo lance validado: \n%s\n", lance.Print())
-}
-
-func consomeLances(msgs <-chan amqp091.Delivery) {
-	for d := range msgs {
-		// log.Printf("[MS-LANCE] NOVO LANCE: %s", d.Body)
-
-		go handleLanceCandidate(d.Body)
-
-		d.Ack(false)
-	}
+	log.Printf("[MS-LANCE] Novo lance validado: \n%s\n", lanceCandidate.Print())
 }
 
 func handleLeilaoIniciado(leilaoByteArray []byte) {
@@ -91,7 +83,9 @@ func handleLeilaoFinalizado(leilaoByteArray []byte) {
 	if ok {
 		lastLance := activeLeilao.LastValidLance
 		if lastLance != (common.Lance{}) {
-			q, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_VENCEDOR, common.QUEUE_LEILAO_VENCEDOR, chOut)
+			q, err := common.CreateOrGetQueueAndBind(
+				common.QUEUE_LEILAO_VENCEDOR, common.QUEUE_LEILAO_VENCEDOR, chOut,
+			)
 			common.FailOnError(err, "Error connecting to queue")
 
 			common.PublishInQueue(chOut, q, lastLance.ToByteArray(), common.QUEUE_LEILAO_VENCEDOR)
@@ -113,7 +107,24 @@ func consumeLeiloesFinalizados(msgs <-chan amqp091.Delivery) {
 }
 
 func (h *newLanceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("This is my home page"))
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var lance common.Lance
+
+	err := json.NewDecoder(r.Body).Decode(&lance)
+	if err != nil {
+		log.Printf("Erro ao decodificar requisição: %v\n", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	handleLanceCandidate(lance)
+
+	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-type", "application/json")
+	json.NewEncoder(w).Encode(lance)
 }
 
 func main() {
@@ -131,10 +142,6 @@ func main() {
 
 	// Register the routes and handlers
 	mux.Handle("/create", &newLanceHandler{})
-
-	qLance, err := common.CreateOrGetQueueAndBind(common.QUEUE_LANCE_REALIZADO, common.QUEUE_LANCE_REALIZADO, chIn)
-	common.FailOnError(err, "Error connecting to queue")
-	common.ConsumeEvents(qLance, chIn, consomeLances)
 
 	qLeiloesIniciados, err := common.CreateOrGetQueueAndBind("", common.QUEUE_LEILAO_INICIADO, chIn)
 	common.FailOnError(err, "Error connecting to queue")
