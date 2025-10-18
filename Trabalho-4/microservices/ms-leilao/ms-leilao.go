@@ -15,7 +15,7 @@ import (
 	"github.com/rabbitmq/amqp091-go"
 )
 
-var activeLeiloes *list.List = list.New()
+var activeLeiloes map[string]common.Leilao = make(map[string]common.Leilao)
 var leiloesSortedByStart *list.List = list.New()
 var leiloesSortedByEnd *list.List = list.New()
 
@@ -62,7 +62,7 @@ func publishWhenStarts(ch *amqp091.Channel, q amqp091.Queue) {
 		}
 
 		common.PublishInQueue(ch, q, firstLeilao.ToByteArray(), common.QUEUE_LEILAO_INICIADO)
-		activeLeiloes.PushBack(first.Value.(common.Leilao))
+		activeLeiloes[firstLeilao.ID] = firstLeilao
 		leiloesSortedByStart.Remove(first)
 
 		log.Printf("[MS-LEILAO] NOVO LEILÃO INICIADO: %s PUBLICADO NA FILA %s\n\n", firstLeilao.Print(), q.Name)
@@ -84,12 +84,7 @@ func publishWhenFinishes(ch *amqp091.Channel, q amqp091.Queue) {
 
 		common.PublishInQueue(ch, q, firstLeilao.ToByteArray(), common.QUEUE_LEILAO_FINALIZADO)
 		leiloesSortedByEnd.Remove(first)
-		for a := activeLeiloes.Front(); a != nil; a = a.Next() {
-			if a.Value.(common.Leilao) == first.Value.(common.Leilao) {
-				activeLeiloes.Remove(a)
-				break
-			}
-		}
+		delete(activeLeiloes, firstLeilao.ID)
 
 		log.Printf("[MS-LEILAO] NOVO LEILÃO FINALIZADO %s PUBLICADO NA FILA %s\n\n", firstLeilao.Print(), q.Name)
 	}
@@ -124,10 +119,8 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var leiloes []common.Leilao
-
-	for e := activeLeiloes.Front(); e != nil; e = e.Next() {
-		value := e.Value.(common.Leilao)
-		leiloes = append(leiloes, value)
+	for _, activeLeilao := range activeLeiloes {
+		leiloes = append(leiloes, activeLeilao)
 	}
 
 	w.Header().Set("Content-type", "application/json")

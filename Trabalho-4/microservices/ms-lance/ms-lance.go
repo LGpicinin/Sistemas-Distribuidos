@@ -18,7 +18,7 @@ var chIn *amqp091.Channel
 var connOut *amqp091.Connection
 var chOut *amqp091.Channel
 
-var activeLeiloes map[string]common.ActiveLeilao
+var activeLeiloes map[string]common.ActiveLeilao = make(map[string]common.ActiveLeilao)
 
 type createHandler struct{}
 type listHandler struct{}
@@ -148,8 +148,6 @@ func main() {
 	// Register the routes and handlers
 	mux.Handle("/create", &createHandler{})
 	mux.Handle("/list", &listHandler{})
-
-	activeLeiloes = make(map[string]common.ActiveLeilao)
 
 	qLance, err := common.CreateOrGetQueueAndBind(common.QUEUE_LANCE_REALIZADO, common.QUEUE_LANCE_REALIZADO, chIn)
 	common.FailOnError(err, "Error connecting to queue")
