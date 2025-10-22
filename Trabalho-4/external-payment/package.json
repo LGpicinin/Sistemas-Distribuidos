@@ -1,0 +1,19 @@
+{
+  "name": "external-payment",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "kl-compiler --path ./src --output ./build",
+    "start": "npm run build && node ./build/api.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "kl-compiler": "github:mathkruger/kl-compiler"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  }
+}
