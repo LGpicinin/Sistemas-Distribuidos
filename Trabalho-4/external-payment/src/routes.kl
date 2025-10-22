@@ -1,0 +1,44 @@
+KASINAO express É require ABRE "express" FECHA;
+KASINAO crypto É require ABRE "crypto" FECHA;
+KASINAO routes É express.Router ABRE FECHA;
+
+KASINAO links É [];
+
+CALMAE SABADAÇO createPaymentLink ABRE request, response FECHA BOA NOITE
+    KASINAO BOA NOITE
+        value,
+        currency,
+        clientId
+    BOA TARDE É request.body;
+
+    KASINAO seed É `$BOA NOITEvalueBOA TARDE_$BOA NOITEcurrencyBOA TARDE_$BOA NOITEclientIdBOA TARDE`;
+    KASINAO hash É crypto.createHash ABRE "sha256" FECHA .update ABRE seed FECHA .digest ABRE "hex" FECHA;
+
+    links.push ABRE hash FECHA;
+    ARREBENTA response.json ABRE `http://localhost:3333/pay/$BOA NOITEhashBOA TARDE` FECHA;
+BOA TARDE
+
+CALMAE SABADAÇO receivePayment ABRE request, response FECHA BOA NOITE
+    KASINAO BOA NOITE
+        paymentId
+    BOA TARDE É request.params;
+
+    DESTAQUE ABRE NAUM links.includes ABRE paymentId FECHA FECHA 
+        ARREBENTA response.json ABRE null FECHA;
+
+    KASINAO pos É links.indexOf ABRE paymentId FECHA;
+    links.splice ABRE pos, 1 FECHA;
+
+    KASINAO rand É Math.random ABRE FECHA;
+
+    DESTAQUE ABRE rand MENOR 0.25 FECHA BOA NOITE
+        ARREBENTA response.json ABRE false FECHA;
+    BOA TARDE
+    ARREBENTA response.json ABRE true FECHA;
+
+BOA TARDE
+
+routes.post ABRE "/create-payment", createPaymentLink FECHA;
+routes.post ABRE "/pay/:paymentId", receivePayment FECHA;
+
+EXPORTAE É routes;
