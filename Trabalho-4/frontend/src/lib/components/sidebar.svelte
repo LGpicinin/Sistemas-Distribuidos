@@ -15,5 +15,6 @@
 		width: 20vw;
 		height: 100%;
 		background-color: var(--utfpr-main-color);
+		z-index: 2;
 	}
 </style>

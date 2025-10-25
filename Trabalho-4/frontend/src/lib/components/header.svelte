@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
+	import Hamburguer from '$lib/assets/hamburguer.svg';
+	import Chevron from '$lib/assets/chevron.svg';
+
 	export let open: boolean;
 	export let username: string;
 </script>
@@ -11,10 +14,8 @@
 		onclick={() => {
 			open = !open;
 		}}
-		style="--rotation: {!open ? '90deg' : '0deg'}"
-		transition:fade
 	>
-		<span>III</span>
+		<img transition:fade src={open ? Chevron : Hamburguer} alt="Menu Icon" />
 	</button>
 	<h1>UTFPR Leilões</h1>
 	<span>{username}</span>
@@ -33,9 +34,11 @@
 	button {
 		background-color: transparent;
 		border: none;
-		rotate: calc(var(--rotation));
 		animation: 0.5s fadeIn;
 		cursor: pointer;
-		font-size: 2rem;
+	}
+
+	img {
+		width: 2rem;
 	}
 </style>
