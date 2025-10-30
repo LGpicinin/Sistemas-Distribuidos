@@ -1,39 +1,38 @@
 <script lang="ts">
+	import Input from '$lib/components/input.svelte';
+	import Button from '$lib/components/button.svelte';
+	import Card from '$lib/components/card.svelte';
 	let userIdInput: string;
 </script>
 
-<div class="card">
+<Card>
 	<form method="POST" action="?/setUserId">
-		<label for="userId">ID do Usuário:</label>
 		<section class="userIdSection">
-			<input type="text" name="userId" id="userId" bind:value={userIdInput} />
-			<button
+			<Input label="ID do Usuário" bind:value={userIdInput} name="userId" --width="20rem" />
+			<Button
 				type="button"
 				onclick={() => {
 					userIdInput = crypto.randomUUID();
-				}}>Criar ID aleatório</button
-			>
+				}}
+				text="Criar ID aleatório"
+				--color="brown"
+			/>
 		</section>
-		<button type="submit">Confirmar</button>
+		<Button --color="green" type="submit" text="Confirmar" />
 	</form>
-</div>
+</Card>
 
 <style>
-	.card {
-		width: 50%;
-		border: 2px solid black;
-		border-radius: 1rem;
-		padding: 5rem;
-	}
-
 	form {
 		display: flex;
 		flex-direction: column;
+		align-items: center;
 		gap: 1rem;
 	}
 
 	.userIdSection {
 		display: flex;
-		/* flex-direction: column; */
+		align-items: end;
+		gap: 1rem;
 	}
 </style>
