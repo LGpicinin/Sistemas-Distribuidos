@@ -25,7 +25,7 @@ namespace Routes
             var contentType = httpContext.Request.ContentType ?? "application/json";
             using var content = new StringContent(body, System.Text.Encoding.UTF8, contentType);
 
-            using var response = await httpClient.PostAsync($"{MSLeilaoAddress}/new", content);
+            using var response = await httpClient.PostAsync($"{MSLeilaoAddress}/create", content);
 
             httpContext.Response.StatusCode = (int)response.StatusCode;
             httpContext.Response.ContentType = response.Content.Headers.ContentType?.ToString() ?? "application/json";

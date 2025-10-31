@@ -12,5 +12,7 @@
 		border-radius: 1rem;
 		padding: 0.5rem 1rem;
 		cursor: pointer;
+		width: var(--width, fit-content);
+		height: var(--height, fit-content);
 	}
 </style>
