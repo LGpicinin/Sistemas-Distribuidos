@@ -1,7 +1,7 @@
-import type { Leilao } from '$lib/helpers/models/leilao.js';
+import type { Leilao } from '$lib/helpers/models/leilao.d.ts';
 import { GATEWAY_ADDRESS } from '$env/static/private';
 import { fail, redirect } from '@sveltejs/kit';
-import { formatDateFromInput } from '$lib/helpers/utils/formatDateFromInput.js';
+import { formatDateFromInput } from '$lib/helpers/utils/formatDateFromInput';
 
 export const actions = {
 	createLeilao: async ({ request, fetch }) => {
