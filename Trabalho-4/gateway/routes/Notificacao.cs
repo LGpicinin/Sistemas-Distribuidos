@@ -21,14 +21,14 @@ namespace Routes
             public string LeilaoId { get; set; }
         }
 
-        public void ConnectCreateChannel()
+        public async void ConnectCreateChannel()
         {
             ConnectionFactory factory = new ConnectionFactory();
             // "guest"/"guest" by default, limited to localhost connections
-            factory.UserName = user;
-            factory.Password = pass;
-            factory.VirtualHost = vhost;
-            factory.HostName = hostName;
+            // factory.UserName = user;
+            // factory.Password = pass;
+            // factory.VirtualHost = vhost;
+            // factory.HostName = hostName;
 
             IConnection conn = await factory.CreateConnectionAsync();
         }
@@ -87,7 +87,7 @@ namespace Routes
                         await httpContext.Response.WriteAsync("BOM");
                     }
                 }
-            }  
+            }
         }
 
         public async Task CancelInterest(HttpContext httpContext)
@@ -123,7 +123,7 @@ namespace Routes
                         await httpContext.Response.WriteAsync("RUIM");
                     }
                 }
-            }  
+            }
         }
     }
 }
