@@ -14,28 +14,18 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+Notificacao notificacaoRouter = new Notificacao();
 Lance lanceRouter = new Lance();
-Leilao leilaoRouter = new Leilao();
+Leilao leilaoRouter = new Leilao(notificacaoRouter);
 
 lanceRouter.SetupRoutes(app);
 leilaoRouter.SetupRoutes(app);
+notificacaoRouter.SetupRoutes(app);
+
+await notificacaoRouter.ConnectCreateChannel();
+await notificacaoRouter.ConsumeEvents();
 
 // app.UseHttpsRedirection();
-
-app.MapGet("/event", async (HttpContext httpContext) =>
-{
-    httpContext.Response.Headers.Append("Content-Type", "text/event-stream");
-
-    while (true)
-    {
-        await httpContext.Response.WriteAsync("event: teu_pai\n");
-        await httpContext.Response.WriteAsync("data: teu_pai\n\n");
-        await httpContext.Response.Body.FlushAsync();
-
-        await Task.Delay(Random.Shared.Next(1000, 5000));
-    }
-})
-.WithName("GetWeatherForecast");
 
 app.Run();
 
