@@ -7,15 +7,17 @@
 	const leiloes: Leilao[] = data.leiloes;
 </script>
 
-{#if leiloes !== null}
-	{#each leiloes as leilao}
-		<Card>
-			<p>{leilao.id}</p>
-			<p>{leilao.description}</p>
-			<p>{leilao.start_date}</p>
-			<p>{leilao.end_date}</p>
-		</Card>
-	{/each}
-{:else}
-	oi
-{/if}
+<Card>
+	{#if leiloes !== null}
+		{#each leiloes as leilao}
+			<Card>
+				<p><strong>ID:</strong> {leilao.id}</p>
+				<p><strong>Descrição:</strong> {leilao.description}</p>
+				<p><strong>Data e hora de início:</strong> {leilao.start_date}</p>
+				<p><strong>Data e hora de término:</strong> {leilao.end_date}</p>
+			</Card>
+		{/each}
+	{:else}
+		<p>Não há leilões ativos.</p>
+	{/if}
+</Card>
