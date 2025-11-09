@@ -2,7 +2,6 @@
 	import Card from '$lib/components/card.svelte';
 	import Input from '$lib/components/input.svelte';
 	import Button from '$lib/components/button.svelte';
-	import { formatDateFromInput } from '$lib/helpers/utils/formatDateFromInput';
 	import { type Leilao } from '$lib/helpers/models/leilao';
 
 	let { form } = $props();

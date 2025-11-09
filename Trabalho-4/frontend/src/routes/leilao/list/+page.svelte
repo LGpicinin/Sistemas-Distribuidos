@@ -3,7 +3,6 @@
 	import type { LeilaoPlus } from '$lib/helpers/models/leilao.js';
 	import type { Interest } from '$lib/helpers/models/interest.js';
 	import Button from '$lib/components/button.svelte';
-	import { fail, redirect } from '@sveltejs/kit';
 
 	let { data } = $props();
 

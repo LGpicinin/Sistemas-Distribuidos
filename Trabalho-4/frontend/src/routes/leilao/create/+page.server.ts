@@ -13,6 +13,12 @@ export const actions = {
 			end_date: formatDateFromInput(formData.get('end_date') as string)
 		};
 
+		if (leilaoData.start_date >= leilaoData.end_date) {
+			return fail(403, {
+				error: `Favor criar leilão com data de término superior a data de início.`
+			});
+		}
+
 		const response = await fetch(`${GATEWAY_ADDRESS}/leilao/create`, {
 			method: 'POST',
 			body: JSON.stringify(leilaoData),
