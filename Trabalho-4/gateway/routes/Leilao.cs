@@ -70,6 +70,7 @@ namespace Routes
             httpContext.Response.StatusCode = (int)activeLeiloesResponse.StatusCode;
 
             var userId = httpContext.Request.Query["userId"];
+            Console.WriteLine(userId);
 
             string responseBody = await activeLeiloesResponse.Content.ReadAsStringAsync();
 
@@ -93,11 +94,8 @@ namespace Routes
                 }
                 leiloesPlus.Add(leilaoPlus);
             }
-            Console.WriteLine(leiloesPlus);
 
-            var leiloesSerialized = JsonSerializer.Serialize<List<LeilaoDataPlus>>(leiloesPlus);
-
-            Console.WriteLine(leiloesSerialized);
+            var leiloesSerialized = JsonSerializer.Serialize(leiloesPlus);
 
             httpContext.Response.ContentType = activeLeiloesResponse.Content.Headers.ContentType?.ToString() ?? "application/json";
             await httpContext.Response.WriteAsync(leiloesSerialized);

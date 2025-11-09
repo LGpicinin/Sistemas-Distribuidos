@@ -36,7 +36,7 @@ namespace Routes
         public class LanceDataType
         {
             public string type { get; set; }
-            public LanceData lance{ get; set; }
+            public LanceData lance { get; set; }
         }
 
         public class InterestList
@@ -46,7 +46,7 @@ namespace Routes
 
         class InterestRequest
         {
-            public string ClientId { get; set; }
+            public string UserId { get; set; }
             public string LeilaoId { get; set; }
         }
 
@@ -93,7 +93,7 @@ namespace Routes
                 if (InterestLists.ContainsKey(lance.LeilaoID))
                 {
                     var interestList = InterestLists[lance.LeilaoID].ClientIds;
-                    foreach(KeyValuePair<string, int> entry in interestList)
+                    foreach (KeyValuePair<string, int> entry in interestList)
                     {
                         HttpContext httpContext = UserList[entry.Key];
                         await httpContext.Response.WriteAsync(lanceSerialized);
@@ -121,7 +121,7 @@ namespace Routes
 
             while (true)
             {
-                
+
             }
 
         }
@@ -157,13 +157,13 @@ namespace Routes
                 if (InterestLists.ContainsKey(interest.LeilaoId))
                 {
                     var interestList = InterestLists[interest.LeilaoId].ClientIds;
-                    if (interestList.ContainsKey(interest.ClientId))
+                    if (interestList.ContainsKey(interest.UserId))
                     {
                         await httpContext.Response.WriteAsync("RUIM");
                     }
                     else
                     {
-                        interestList.Add(interest.ClientId, 0);
+                        interestList.Add(interest.UserId, 0);
                         await httpContext.Response.WriteAsync("BOM");
                     }
                 }
@@ -193,9 +193,9 @@ namespace Routes
                 if (InterestLists.ContainsKey(interest.LeilaoId))
                 {
                     var interestList = InterestLists[interest.LeilaoId].ClientIds;
-                    if (interestList.ContainsKey(interest.ClientId))
+                    if (interestList.ContainsKey(interest.UserId))
                     {
-                        interestList.Remove(interest.ClientId);
+                        interestList.Remove(interest.UserId);
                         await httpContext.Response.WriteAsync("BOM");
                     }
                     else

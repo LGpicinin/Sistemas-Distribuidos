@@ -7,7 +7,6 @@ export const load = async ({ fetch, cookies }) => {
 
 	// const data = JSON.parse(response)
 	const data: LeilaoPlus[] | null = await response.json();
-	console.log(data);
 	return {
 		leiloes: data ?? ([] as LeilaoPlus[])
 	};

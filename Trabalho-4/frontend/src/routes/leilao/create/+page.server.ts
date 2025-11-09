@@ -13,22 +13,18 @@ export const actions = {
 			end_date: formatDateFromInput(formData.get('end_date') as string)
 		};
 
-		try {
-			const response = await fetch(`${GATEWAY_ADDRESS}/leilao/create`, {
-				method: 'POST',
-				body: JSON.stringify(leilaoData),
-				headers: {
-					'Content-Type': 'application/json'
-				}
-			});
+		const response = await fetch(`${GATEWAY_ADDRESS}/leilao/create`, {
+			method: 'POST',
+			body: JSON.stringify(leilaoData),
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		});
 
-			if (response.status === 201) return redirect(303, 'leilao/list');
-			else throw new Error(`Erro ao criar leilão: ${response.statusText}`);
-		} catch (error: unknown) {
-			if (error instanceof Error)
-				return fail(403, {
-					error: error.message
-				});
-		}
+		if (response.status === 201) return redirect(303, '/leilao/list');
+
+		return fail(403, {
+			error: `Erro ao criar leilão: ${response.statusText}`
+		});
 	}
 };

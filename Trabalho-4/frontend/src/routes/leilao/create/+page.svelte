@@ -76,12 +76,7 @@
 				--color="orangered"
 			/>
 		</div>
-		<Button
-			onclick={() => console.log(formatDateFromInput(leilaoData.start_date))}
-			text="Cadastrar"
-			type="submit"
-			--color="green"
-		/>
+		<Button text="Cadastrar" type="submit" --color="green" />
 		{#if form?.error}
 			<p>Erro ao criar Leilão: {form.error}</p>
 		{/if}
