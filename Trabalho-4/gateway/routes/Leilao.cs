@@ -54,7 +54,6 @@ namespace Routes
             Console.WriteLine(response.StatusCode.ToString());
             if (response.StatusCode.ToString() == "Created")
             {
-                Console.WriteLine("ehhhh");
                 var leilao = JsonSerializer.Deserialize<LeilaoData>(body);
                 notificacao.AddLeilao(leilao.id);
             }
@@ -86,6 +85,7 @@ namespace Routes
                 if (!notificacao.InterestLists.ContainsKey(leiloes[i].id))
                 {
                     Console.WriteLine("vai dar merda");
+                    continue;
                 }
                 var clients = notificacao.InterestLists[leiloes[i].id].ClientIds;
                 if (clients.ContainsKey(userId))
