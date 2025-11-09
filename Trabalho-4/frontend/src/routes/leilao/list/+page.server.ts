@@ -1,4 +1,4 @@
-import type { Leilao, LeilaoPlus } from '$lib/helpers/models/leilao.d.ts';
+import type { LeilaoPlus } from '$lib/helpers/models/leilao.d.ts';
 import { GATEWAY_ADDRESS } from '$env/static/private';
 
 export const load = async ({ fetch, cookies }) => {
@@ -7,7 +7,7 @@ export const load = async ({ fetch, cookies }) => {
 
 	// const data = JSON.parse(response)
 	const data: LeilaoPlus[] | null = await response.json();
-	console.log(data)
+	console.log(data);
 	return {
 		leiloes: data ?? ([] as LeilaoPlus[])
 	};
