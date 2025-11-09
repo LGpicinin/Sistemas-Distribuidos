@@ -16,10 +16,16 @@ namespace Routes
 
         public class LeilaoData
         {
-            public string ID { get; set; }
-            public string Description { get; set; }
-            public DateTime StartDate { get; set; }
-            public DateTime EndDate { get; set; }
+            public string id { get; set; }
+            public string description { get; set; }
+            public DateTime start_date { get; set; }
+            public DateTime end_date { get; set; }
+        }
+
+        public class LeilaoDataPlus
+        {
+            public LeilaoData leilao { get; set; }
+            public bool notificar { get; set; }
         }
 
         public void SetupRoutes(WebApplication app)
@@ -45,15 +51,12 @@ namespace Routes
             using var response = await httpClient.PostAsync($"{MSLeilaoAddress}/create", content);
 
             httpContext.Response.StatusCode = (int)response.StatusCode;
-            if (httpContext.Response.StatusCode == 201)
+            Console.WriteLine(response.StatusCode.ToString());
+            if (response.StatusCode.ToString() == "Created")
             {
-                using (var reader = new StreamReader(httpContext.Response.Body, System.Text.Encoding.UTF8, leaveOpen: true))
-                {
-                    body = await reader.ReadToEndAsync();
-                }
-
+                Console.WriteLine("ehhhh");
                 var leilao = JsonSerializer.Deserialize<LeilaoData>(body);
-                notificacao.AddLeilao(leilao.ID);
+                notificacao.AddLeilao(leilao.id);
             }
             httpContext.Response.ContentType = response.Content.Headers.ContentType?.ToString() ?? "application/json";
             var respBody = await response.Content.ReadAsStringAsync();
@@ -65,9 +68,39 @@ namespace Routes
             using var activeLeiloesResponse = await httpClient.GetAsync($"{MSLeilaoAddress}/list");
 
             httpContext.Response.StatusCode = (int)activeLeiloesResponse.StatusCode;
+
+            var userId = httpContext.Request.Query["userId"];
+
+            string responseBody = await activeLeiloesResponse.Content.ReadAsStringAsync();
+
+
+            var leiloes = JsonSerializer.Deserialize<List<LeilaoData>>(responseBody);
+            List<LeilaoDataPlus> leiloesPlus = new List<LeilaoDataPlus>();
+
+            for (int i = 0; i < leiloes?.Count; i++)
+            {
+                var leilaoPlus = new LeilaoDataPlus();
+                leilaoPlus.leilao = leiloes[i];
+                leilaoPlus.notificar = false;
+                if (!notificacao.InterestLists.ContainsKey(leiloes[i].id))
+                {
+                    Console.WriteLine("vai dar merda");
+                }
+                var clients = notificacao.InterestLists[leiloes[i].id].ClientIds;
+                if (clients.ContainsKey(userId))
+                {
+                    leilaoPlus.notificar = true;
+                }
+                leiloesPlus.Add(leilaoPlus);
+            }
+            Console.WriteLine(leiloesPlus);
+
+            var leiloesSerialized = JsonSerializer.Serialize<List<LeilaoDataPlus>>(leiloesPlus);
+
+            Console.WriteLine(leiloesSerialized);
+
             httpContext.Response.ContentType = activeLeiloesResponse.Content.Headers.ContentType?.ToString() ?? "application/json";
-            var respBody = await activeLeiloesResponse.Content.ReadAsStringAsync();
-            await httpContext.Response.WriteAsync(respBody);
+            await httpContext.Response.WriteAsync(leiloesSerialized);
         }
     }
 }
