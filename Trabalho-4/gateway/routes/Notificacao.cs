@@ -18,7 +18,7 @@ namespace Routes
 
         private static readonly HttpClient httpClient = new HttpClient();
         // private static string MSNotificacaoAddress = "http://localhost:8090";
-        private Dictionary<string, InterestList> InterestLists = new Dictionary<string, InterestList>();
+        public Dictionary<string, InterestList> InterestLists = new Dictionary<string, InterestList>();
         private Dictionary<string, HttpContext> UserList = new Dictionary<string, HttpContext>();
         private ConnectionFactory factory = new ConnectionFactory();
 
@@ -39,7 +39,7 @@ namespace Routes
             public LanceData lance{ get; set; }
         }
 
-        class InterestList
+        public class InterestList
         {
             public Dictionary<string, int> ClientIds = new Dictionary<string, int>();
         }
@@ -102,7 +102,7 @@ namespace Routes
                 }
 
             };
-            await channel.BasicConsumeAsync("orders", autoAck: false, consumer);
+            await channel.BasicConsumeAsync(QUEUE_LANCE_VALIDADO, autoAck: false, consumer);
         }
 
         public async Task SendNotification(HttpContext httpContext)
