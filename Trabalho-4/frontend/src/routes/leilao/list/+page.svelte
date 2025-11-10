@@ -44,13 +44,24 @@
 					<p><strong>Data e hora de término:</strong> {leilao.leilao.end_date}</p>
 				</div>
 
-				<Button
-					text={leilao.notificar ? 'Cancelar Interesse' : 'Registrar Interesse'}
-					type="button"
-					onclick={() => changeInterest(data.userId, leilao, index)}
-					--width="10rem"
-					--color={leilao.notificar ? 'red' : 'green'}
-				/>
+				<div class="buttons">
+					<Button
+						text={leilao.notificar ? 'Cancelar Interesse' : 'Registrar Interesse'}
+						type="button"
+						onclick={() => changeInterest(data.userId, leilao, index)}
+						--width="10rem"
+						--color={leilao.notificar ? 'red' : 'green'}
+					/>
+					<Button
+						text="Realizar lance"
+						type="button"
+						onclick={() => {
+							window.location.href = `/leilao/${leilao.leilao.id}`;
+						}}
+						--width="10rem"
+						--color="blue"
+					/>
+				</div>
 			</Card>
 		{/each}
 	{:else}
