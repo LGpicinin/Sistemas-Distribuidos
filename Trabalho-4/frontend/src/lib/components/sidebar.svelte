@@ -16,10 +16,13 @@
 
 <style>
 	section {
+		position: absolute;
+		left: 0;
+		top: 4rem;
 		display: flex;
 		flex-direction: column;
-		width: 20vw;
-		height: 100%;
+		width: 15vw;
+		height: calc(100% - 4rem);
 		background-color: var(--utfpr-main-color);
 		z-index: 2;
 	}

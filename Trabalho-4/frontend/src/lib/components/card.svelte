@@ -7,7 +7,7 @@
 		width: 50%;
 		border: 2px solid black;
 		border-radius: 1rem;
-		padding: 5rem;
+		padding: 2.5rem;
 		margin: 1rem;
 		display: flex;
 		flex-direction: column;

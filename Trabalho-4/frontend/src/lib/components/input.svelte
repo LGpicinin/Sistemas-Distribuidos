@@ -4,6 +4,7 @@
 	export let placeholder = '';
 	export let name = '';
 	export let value: string;
+	export let disabled: boolean = false;
 </script>
 
 <div>
@@ -12,7 +13,7 @@
 			<label for={name}>{label}</label>
 		</div>
 	{/if}
-	<input {type} {name} id={name} bind:value {placeholder} />
+	<input {disabled} {type} {name} id={name} bind:value {placeholder} />
 </div>
 
 <style>
@@ -22,5 +23,6 @@
 		width: var(--width, fit-content);
 		border-radius: 1rem;
 		height: 2rem;
+		padding: 0.5rem;
 	}
 </style>

@@ -20,7 +20,7 @@
 			<img transition:fade src={open ? Chevron : Hamburguer} alt="Menu Icon" />
 		</button>
 	</div>
-	<h1>UTFPR Leilões</h1>
+	<a href="/home"><h1>UTFPR Leilões</h1></a>
 	<div class="right">
 		<p>{username}</p>
 		<form action="/?/deleteUserId" method="post">
@@ -62,5 +62,10 @@
 
 	img {
 		width: 2rem;
+	}
+
+	a {
+		text-decoration: none;
+		color: black;
 	}
 </style>
