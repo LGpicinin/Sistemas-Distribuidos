@@ -51,7 +51,6 @@ namespace Routes
             using var response = await httpClient.PostAsync($"{MSLeilaoAddress}/create", content);
 
             httpContext.Response.StatusCode = (int)response.StatusCode;
-            Console.WriteLine(response.StatusCode.ToString());
             if (response.StatusCode.ToString() == "Created")
             {
                 var leilao = JsonSerializer.Deserialize<LeilaoData>(body);
@@ -69,7 +68,6 @@ namespace Routes
             httpContext.Response.StatusCode = (int)activeLeiloesResponse.StatusCode;
 
             var userId = httpContext.Request.Query["userId"];
-            Console.WriteLine(userId);
 
             string responseBody = await activeLeiloesResponse.Content.ReadAsStringAsync();
 
@@ -84,8 +82,7 @@ namespace Routes
                 leilaoPlus.notificar = false;
                 if (!notificacao.InterestLists.ContainsKey(leiloes[i].id))
                 {
-                    Console.WriteLine("vai dar merda");
-                    continue;
+                    notificacao.InterestLists.Add(leiloes[i].id, new Notificacao.InterestList());
                 }
                 var clients = notificacao.InterestLists[leiloes[i].id].ClientIds;
                 if (clients.ContainsKey(userId))
