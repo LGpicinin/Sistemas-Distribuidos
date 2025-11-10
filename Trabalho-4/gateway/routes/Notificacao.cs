@@ -20,6 +20,7 @@ namespace Routes
         // private static string MSNotificacaoAddress = "http://localhost:8090";
         public Dictionary<string, InterestList> InterestLists = new Dictionary<string, InterestList>();
         private Dictionary<string, HttpContext> UserList = new Dictionary<string, HttpContext>();
+        // private List<HttpContext> UserList = new List<HttpContext>();
         private ConnectionFactory factory = new ConnectionFactory();
 
         private IConnection conn = null;
@@ -28,9 +29,9 @@ namespace Routes
 
         public class LanceData
         {
-            public string LeilaoID { get; set; }
-            public string UserID { get; set; }
-            public float Value { get; set; }
+            public string leilao_id { get; set; }
+            public string user_id { get; set; }
+            public float value { get; set; }
         }
 
         public class LanceDataType
@@ -90,14 +91,17 @@ namespace Routes
                 lancePlus.type = routingKey;
 
                 var lanceSerialized = JsonSerializer.Serialize<LanceDataType>(lancePlus);
-                if (InterestLists.ContainsKey(lance.LeilaoID))
+                if (InterestLists.ContainsKey(lance.leilao_id))
                 {
-                    var interestList = InterestLists[lance.LeilaoID].ClientIds;
+                    var interestList = InterestLists[lance.leilao_id].ClientIds;
                     foreach (KeyValuePair<string, int> entry in interestList)
                     {
-                        HttpContext httpContext = UserList[entry.Key];
-                        await httpContext.Response.WriteAsync(lanceSerialized);
-                        await httpContext.Response.Body.FlushAsync();
+                        HttpContext context = UserList[entry.Key];
+                        Console.WriteLine(entry.Key);
+                        await context.Response.WriteAsync($"event: {entry.Key}\n");
+                        await context.Response.WriteAsync($"data: {lanceSerialized}\n\n");
+                        await context.Response.Body.FlushAsync();
+                        Console.WriteLine("context");
                     }
                 }
 
@@ -109,19 +113,20 @@ namespace Routes
         {
             httpContext.Request.EnableBuffering();
 
-            string body;
-            using (var reader = new StreamReader(httpContext.Request.Body, System.Text.Encoding.UTF8, leaveOpen: true))
-            {
-                body = await reader.ReadToEndAsync();
-                httpContext.Request.Body.Position = 0;
-            }
+            var userId = httpContext.Request.Query["userId"];
 
-            UserList.Add(body, httpContext);
-            // httpContext.Response.Headers.Append("Content-Type", "text/event-stream");
+            httpContext.Response.Headers.Append("Content-Type", "text/event-stream");
+            UserList.TryAdd(userId, httpContext);
 
             while (true)
             {
-
+                await this.ConsumeEvents();
+                // teste apenas
+                // Console.WriteLine("deveria estar indo");
+                // await httpContext.Response.WriteAsync($"event: aaa\n");
+                // await httpContext.Response.WriteAsync($"data: 893126302163\n\n");
+                // await httpContext.Response.Body.FlushAsync();
+                // await Task.Delay(1000);
             }
 
         }
