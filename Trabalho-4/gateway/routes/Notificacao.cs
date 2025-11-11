@@ -116,18 +116,18 @@ namespace Routes
             var userId = httpContext.Request.Query["userId"];
 
             httpContext.Response.Headers.Append("Content-Type", "text/event-stream");
-            UserList.TryAdd(userId, httpContext);
-
-            while (true)
+            if (UserList.ContainsKey(userId))
             {
-                await this.ConsumeEvents();
-                // teste apenas
-                // Console.WriteLine("deveria estar indo");
-                // await httpContext.Response.WriteAsync($"event: aaa\n");
-                // await httpContext.Response.WriteAsync($"data: 893126302163\n\n");
-                // await httpContext.Response.Body.FlushAsync();
-                // await Task.Delay(1000);
+                UserList[userId] = httpContext;
+            } else
+            {
+                UserList.Add(userId, httpContext);
             }
+            while (UserList[userId] == httpContext)
+            {
+                continue;
+            }
+    
 
         }
 
