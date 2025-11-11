@@ -24,8 +24,8 @@
 <Card>
 	{#each messages as message}
 		<Card>
+			<h2>{message.type == "lance_validado" ? "Novo lance" : "Lance Vencedor"} do Leilão {message.lance.leilao_id}</h2>
 			<div class="info">
-				<p><strong>ID Leilão:</strong> {message.lance.leilao_id}</p>
 				<p><strong>Valor do lance:</strong> R$ {message.lance.value}.00</p>
 			</div>
 		</Card>

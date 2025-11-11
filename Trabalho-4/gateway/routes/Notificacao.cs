@@ -107,6 +107,7 @@ namespace Routes
 
             };
             await channel.BasicConsumeAsync(QUEUE_LANCE_VALIDADO, autoAck: false, consumer);
+            await channel.BasicConsumeAsync(QUEUE_LEILAO_VENCEDOR, autoAck: false, consumer);
         }
 
         public async Task SendNotification(HttpContext httpContext)
