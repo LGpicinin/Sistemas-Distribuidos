@@ -12,7 +12,7 @@
 		eventSource = new EventSource(`${PUBLIC_GATEWAY_ADDRESS}/event?userId=${data.userId}`);
 		eventSource.addEventListener(data.userId, (event) => {
 			console.log(event);
-			messages = [event.data, ...messages];
+			messages = [JSON.parse(event.data), ...messages];
 		});
 	});
 
@@ -23,6 +23,11 @@
 
 <Card>
 	{#each messages as message}
-		<div>{message}</div>
+		<Card>
+			<div class="info">
+				<p><strong>ID Leilão:</strong> {message.lance.leilao_id}</p>
+				<p><strong>Valor do lance:</strong> R$ {message.lance.value}.00</p>
+			</div>
+		</Card>
 	{/each}
 </Card>
