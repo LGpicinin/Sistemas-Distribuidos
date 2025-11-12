@@ -37,7 +37,9 @@ leilaoRouter.SetupRoutes(app);
 notificacaoRouter.SetupRoutes(app);
 
 await notificacaoRouter.ConnectCreateChannel();
-await notificacaoRouter.ConsumeEvents();
+await notificacaoRouter.ConsumeLanceEvents();
+await notificacaoRouter.ConsumeStatusEvents();
+await notificacaoRouter.ConsumeLinkEvents();
 
 // app.UseHttpsRedirection();
 

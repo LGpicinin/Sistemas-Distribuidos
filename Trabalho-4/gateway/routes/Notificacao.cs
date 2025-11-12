@@ -16,6 +16,10 @@ namespace Routes
         private string QUEUE_LEILAO_INICIADO = "leilao_iniciado";
         private string QUEUE_LEILAO_FINALIZADO = "leilao_finalizado";
 
+        private string QUEUE_LINK_PAGAMENTO = "link_pagamento";
+
+        private string QUEUE_STATUS_PAGAMENTO = "status_pagamento";
+
         private static readonly HttpClient httpClient = new HttpClient();
         // private static string MSNotificacaoAddress = "http://localhost:8090";
         public Dictionary<string, InterestList> InterestLists = new Dictionary<string, InterestList>();
@@ -32,6 +36,33 @@ namespace Routes
             public string leilao_id { get; set; }
             public string user_id { get; set; }
             public float value { get; set; }
+        }
+
+        public class StatusData
+        {
+            public string clientId { get; set; }
+            public string paymentId { get; set; }
+            public float value { get; set; }
+
+            public bool status { get; set; }
+        }
+
+        public class StatusDataType
+        {
+            public string type { get; set; }
+            public StatusData statusData { get; set; }
+        }
+
+        public class LinkData
+        {
+            public string clientId { get; set; }
+            public string link { get; set; }
+        }
+
+        public class LinkDataType
+        {
+            public string type { get; set; }
+            public LinkData linkData { get; set; }
         }
 
         public class LanceDataType
@@ -72,7 +103,7 @@ namespace Routes
             app.MapPost("/cancel", CancelInterest);
         }
 
-        public async Task ConsumeEvents()
+        public async Task ConsumeLanceEvents()
         {
             var consumer = new AsyncEventingBasicConsumer(channel);
             consumer.ReceivedAsync += async (sender, eventArgs) =>
@@ -108,6 +139,68 @@ namespace Routes
             };
             await channel.BasicConsumeAsync(QUEUE_LANCE_VALIDADO, autoAck: false, consumer);
             await channel.BasicConsumeAsync(QUEUE_LEILAO_VENCEDOR, autoAck: false, consumer);
+        }
+
+        public async Task ConsumeStatusEvents()
+        {
+            var consumer = new AsyncEventingBasicConsumer(channel);
+            consumer.ReceivedAsync += async (sender, eventArgs) =>
+            {
+                var routingKey = eventArgs.RoutingKey;
+                byte[] body = eventArgs.Body.ToArray();
+                string message = Encoding.UTF8.GetString(body);
+                var status = JsonSerializer.Deserialize<StatusData>(message);
+
+                // Acknowledge the message
+                await ((AsyncEventingBasicConsumer)sender)
+                    .Channel.BasicAckAsync(eventArgs.DeliveryTag, multiple: false);
+
+                var statusPlus = new StatusDataType();
+                statusPlus.statusData = status;
+                statusPlus.type = routingKey;
+
+                var lanceSerialized = JsonSerializer.Serialize<StatusDataType>(statusPlus);
+
+                HttpContext context = UserList[status.clientId];
+                Console.WriteLine(status.clientId);
+                await context.Response.WriteAsync($"event: {status.clientId}\n");
+                await context.Response.WriteAsync($"data: {lanceSerialized}\n\n");
+                await context.Response.Body.FlushAsync();
+                Console.WriteLine("context");
+
+            };
+            await channel.BasicConsumeAsync(QUEUE_STATUS_PAGAMENTO, autoAck: false, consumer);
+        }
+
+        public async Task ConsumeLinkEvents()
+        {
+            var consumer = new AsyncEventingBasicConsumer(channel);
+            consumer.ReceivedAsync += async (sender, eventArgs) =>
+            {
+                var routingKey = eventArgs.RoutingKey;
+                byte[] body = eventArgs.Body.ToArray();
+                string message = Encoding.UTF8.GetString(body);
+                var link = JsonSerializer.Deserialize<LinkData>(message);
+
+                // Acknowledge the message
+                await ((AsyncEventingBasicConsumer)sender)
+                    .Channel.BasicAckAsync(eventArgs.DeliveryTag, multiple: false);
+
+                var linkPlus = new LinkDataType();
+                linkPlus.linkData = link;
+                linkPlus.type = routingKey;
+
+                var lanceSerialized = JsonSerializer.Serialize<LinkDataType>(linkPlus);
+
+                HttpContext context = UserList[link.clientId];
+                Console.WriteLine(link.clientId);
+                await context.Response.WriteAsync($"event: {link.clientId}\n");
+                await context.Response.WriteAsync($"data: {lanceSerialized}\n\n");
+                await context.Response.Body.FlushAsync();
+                Console.WriteLine("context");
+
+            };
+            await channel.BasicConsumeAsync(QUEUE_LINK_PAGAMENTO, autoAck: false, consumer);
         }
 
         public async Task SendNotification(HttpContext httpContext)
