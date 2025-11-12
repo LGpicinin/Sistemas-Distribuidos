@@ -72,5 +72,6 @@
 <style>
 	.info {
 		margin: 1rem;
+		width: 100%;
 	}
 </style>

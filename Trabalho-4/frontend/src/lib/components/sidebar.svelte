@@ -22,7 +22,7 @@
 		display: flex;
 		flex-direction: column;
 		width: 15vw;
-		height: calc(100% - 4rem);
+		height: 100%;
 		background-color: var(--utfpr-main-color);
 		z-index: 2;
 	}
