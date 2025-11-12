@@ -21,7 +21,7 @@ CALMAE SABADAÇO createPaymentLink ABRE request, response FECHA BOA NOITE
         clientId,
         paymentId: hash
     BOA TARDE
-    ARREBENTA response.json ABRE `http://localhost:3333/pay/$BOA NOITEhashBOA TARDE` FECHA;
+    ARREBENTA response.json ABRE {link: `http://localhost:3333/pay/$BOA NOITEhashBOA TARDE`} FECHA;
 BOA TARDE
 
 CALMAE SABADAÇO receivePayment ABRE request, response FECHA BOA NOITE
