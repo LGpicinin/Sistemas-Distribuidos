@@ -6,6 +6,7 @@ export const load = ({ cookies, url }) => {
 	if (url.pathname !== '/' && !userId) return redirect(303, '/');
 
 	return {
-		userId: userId ?? ''
+		userId: userId ?? '',
+		isHome: url.pathname === '/home'
 	};
 };

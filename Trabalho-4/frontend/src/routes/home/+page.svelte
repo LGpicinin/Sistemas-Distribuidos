@@ -3,91 +3,37 @@
 	import { PUBLIC_GATEWAY_ADDRESS } from '$env/static/public';
 	import { onDestroy, onMount } from 'svelte';
 	import Button from '$lib/components/button.svelte';
+	import { type Notification as NotificationType } from '$lib/helpers/models/notification.js';
+	import { loadNotifications, saveNotifications } from '$lib/helpers/utils/notifications.js';
+	import Notification from '$lib/components/notification.svelte';
+	import { flip } from 'svelte/animate';
 
 	const { data } = $props();
 
-	let messages = $state([] as any[]);
+	let messages = $state([] as NotificationType[]);
 	let eventSource: EventSource;
-	let clickPagamento = $state(false)
 
 	onMount(() => {
 		eventSource = new EventSource(`${PUBLIC_GATEWAY_ADDRESS}/event?userId=${data.userId}`);
+		messages = loadNotifications();
 		eventSource.addEventListener(data.userId, (event) => {
-			console.log(event.data);
 			messages = [JSON.parse(event.data), ...messages];
+			saveNotifications(messages);
 		});
 	});
 
 	onDestroy(() => {
 		eventSource?.close();
 	});
-
-	const realizar_pagamento = async (link: string, message: any) => {
-		const response = await fetch(link, {
-			method: 'POST',
-			body: JSON.stringify(message),
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		});
-
-		clickPagamento = true;
-		
-		// return fail(403, {
-		// 	error: `Erro ao criar leilão: ${response.statusText}`
-		// });
-	}
-
-	const lanceTypes: Record<string, string> = {
-		lance_validado: 'Novo Lance Válido',
-		lance_invalidado: 'Novo Lance Inválido',
-		leilao_vencedor: 'Lance Vencedor',
-		link_pagamento: 'Link para Pagamento',
-		status_pagamento: 'Status do Pagamento'
-	};
 </script>
 
 <Card>
 	<h2>Histórico de Notificações</h2>
 	{#each messages as message}
 		<Card>
-			<h4>
-				{lanceTypes[message.type]}
-			</h4>
-			{#if message.type != "status_pagamento" && message.type != "link_pagamento"}
-				<div class="info">
-					<p><strong>ID do Leilão:</strong> {message.lance.leilao_id}</p>
-					<p><strong>Autor do lance:</strong> {message.lance.user_id}</p>
-					<p><strong>Valor do lance:</strong> R$ {message.lance.value}.00</p>
-				</div>
-			{:else if message.type == "link_pagamento"}
-				<div class="info">
-					{#if clickPagamento == false}
-						<Button
-							text={'Realizar pagamento'}
-							type="disabled"
-							onclick={() => realizar_pagamento(message.linkData.link, message)}
-							--width="10rem"
-							--color='green'
-						/>
-					{/if}
-				</div>
-			{:else}
-				<div class="info">
-					<p><strong>Status do pagamento:</strong> {
-						message.statusData.status == true ? "Aprovado" : "Recusado"
-					}</p>
-					<p><strong>Valor:</strong> {message.statusData.value}</p>
-				</div>
-			{/if}
+			<Notification {message} />
 		</Card>
 	{:else}
 		<p>Sem notificações para exibir</p>
 	{/each}
 </Card>
-
-<style>
-	.info {
-		margin-top: 1rem;
-	}
-</style>

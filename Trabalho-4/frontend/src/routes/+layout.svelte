@@ -1,11 +1,31 @@
 <script lang="ts">
+	import { PUBLIC_GATEWAY_ADDRESS } from '$env/static/public';
 	import favicon from '$lib/assets/favicon.svg';
 	import Header from '$lib/components/header.svelte';
 	import Sidebar from '$lib/components/sidebar.svelte';
+	import NotificationBar from '$lib/components/notificationBar.svelte';
+	import { loadNotifications, saveNotifications } from '$lib/helpers/utils/notifications.js';
+	import { onMount, onDestroy } from 'svelte';
+	import { type Notification } from '$lib/helpers/models/notification.js';
 
 	let { children, data } = $props();
-
 	let sidebarOpen: boolean = $state(false);
+	let eventSource: EventSource;
+	let messages: Notification[] = $state([] as Notification[]);
+
+	onMount(() => {
+		eventSource = new EventSource(`${PUBLIC_GATEWAY_ADDRESS}/event?userId=${data.userId}`);
+		messages = loadNotifications();
+		eventSource.addEventListener(data.userId, (event) => {
+			messages = [JSON.parse(event.data), ...messages];
+			$inspect(messages).with(console.log);
+			saveNotifications(messages);
+		});
+	});
+
+	onDestroy(() => {
+		eventSource?.close();
+	});
 </script>
 
 <svelte:head>
@@ -19,6 +39,9 @@
 		<section class="content">
 			{@render children?.()}
 		</section>
+		{#if !data.isHome}
+			<NotificationBar bind:notifications={messages} />\
+		{/if}
 	</main>
 </div>
 
