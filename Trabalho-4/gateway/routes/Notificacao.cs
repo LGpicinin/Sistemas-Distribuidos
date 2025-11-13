@@ -138,6 +138,7 @@ namespace Routes
 
             };
             await channel.BasicConsumeAsync(QUEUE_LANCE_VALIDADO, autoAck: false, consumer);
+            await channel.BasicConsumeAsync(QUEUE_LANCE_INVALIDADO, autoAck: false, consumer);
             await channel.BasicConsumeAsync(QUEUE_LEILAO_VENCEDOR, autoAck: false, consumer);
         }
 
@@ -213,7 +214,8 @@ namespace Routes
             if (UserList.ContainsKey(userId))
             {
                 UserList[userId] = httpContext;
-            } else
+            }
+            else
             {
                 UserList.Add(userId, httpContext);
             }
@@ -221,7 +223,7 @@ namespace Routes
             {
                 continue;
             }
-    
+
 
         }
 
