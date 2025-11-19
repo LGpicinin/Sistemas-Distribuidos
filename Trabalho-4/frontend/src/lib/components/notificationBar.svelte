@@ -8,7 +8,7 @@
 
 <section>
 	{#each notifications as notification, index (notification)}
-		<div animate:flip>
+		<div>
 			<Card --bgColor="lightgray">
 				<Notification message={notification} --bgColor="lightgray" />
 			</Card>

@@ -1,15 +1,27 @@
 import type { Notification } from '../models/notification';
+import { writable } from 'svelte/store';
+import type { Writable } from 'svelte/store';
+import { browser } from '$app/environment';
 
-export const loadNotifications = () => {
+export const notifications_token = writable({
+	value: ""
+})
+
+export const loadNotifications = (messages: Writable<Notification[]>) => {
 	const notifications = sessionStorage.getItem('notifications');
 
-	if (notifications === null) return [] as Notification[];
+	messages = writable(notifications === null ? [] as Notification[] : JSON.parse(notifications) as Notification[])
 
-	return JSON.parse(notifications) as Notification[];
+	return messages;
 };
 
-export const saveNotifications = (notifications: Notification[]) => {
-	const notificationsString = JSON.stringify(notifications);
+export const saveNotifications = (messages: Writable<Notification[]>) => {
 
-	sessionStorage.setItem('notifications', notificationsString);
+	messages.subscribe((value) => {
+		sessionStorage.setItem('notifications', JSON.stringify(value))
+	})
+
+	return messages
+
+	// sessionStorage.setItem('notifications', notificationsString);
 };

@@ -3,10 +3,21 @@
 	import type { LeilaoPlus } from '$lib/helpers/models/leilao.js';
 	import type { Interest } from '$lib/helpers/models/interest.js';
 	import Button from '$lib/components/button.svelte';
+	import { enhance } from '$app/forms';
+	import { redirect } from '@sveltejs/kit';
+
+	interface LeilaoPlusPlus extends LeilaoPlus {
+		href: string;
+	}
 
 	let { data } = $props();
 
 	let leiloes: LeilaoPlus[] = $state(data.leiloes);
+	let leiloesPlus : LeilaoPlusPlus[] = [];
+	let i = 0
+	for (i=0; i<leiloes.length; i++){
+		leiloesPlus.push({...leiloes[i], href:`/leilao/${leiloes[i].leilao.id}`})
+	}
 
 	const changeInterest = async (userId: string, leilao: LeilaoPlus, index: number) => {
 		const interest: Interest = {
@@ -33,8 +44,8 @@
 
 <Card>
 	<h2>Leilões Ativos</h2>
-	{#if leiloes.length}
-		{#each leiloes as leilao, index}
+	{#if leiloesPlus.length}
+		{#each leiloesPlus as leilao, index}
 			<Card>
 				<h3>Leilão {index + 1}</h3>
 				<div class="info">
@@ -52,15 +63,17 @@
 						--width="10rem"
 						--color={leilao.notificar ? 'red' : 'green'}
 					/>
-					<Button
+					<a href={leilao.href}>Realizar lance</a>
+					<!-- <Button
 						text="Realizar lance"
 						type="button"
+						href={leilao.href}
 						onclick={() => {
-							window.location.href = `/leilao/${leilao.leilao.id}`;
+							
 						}}
 						--width="10rem"
 						--color="blue"
-					/>
+					/> -->
 				</div>
 			</Card>
 		{/each}

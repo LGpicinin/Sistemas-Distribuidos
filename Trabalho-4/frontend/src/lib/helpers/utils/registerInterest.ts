@@ -6,7 +6,7 @@ export const registerInterest = async (userId: string, leilao_id: string) => {
 		LeilaoId: leilao_id
 	};
 
-	await fetch(`http://localhost:5059/register?userId=${userId}`, {
+	await fetch(`http://localhost:5059/register`, {
 		method: 'POST',
 		body: JSON.stringify(interest),
 		headers: {
