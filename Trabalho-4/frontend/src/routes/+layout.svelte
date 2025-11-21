@@ -41,7 +41,7 @@
 			{@render children?.()}
 		</section>
 
-		<NotificationBar bind:notifications={$messages} />\
+		<NotificationBar bind:notifications={$messages} />
 	</main>
 </div>
 

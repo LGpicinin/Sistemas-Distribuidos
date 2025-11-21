@@ -24,7 +24,7 @@
 	<div class="right">
 		<p>{username}</p>
 		<form action="/?/deleteUserId" method="post">
-			<Button type="submit" text="Sair" />
+			<Button type="submit" text="Sair" onclick={() => sessionStorage.clear()}/>
 		</form>
 	</div>
 </header>
