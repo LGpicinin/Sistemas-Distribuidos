@@ -2,9 +2,6 @@ import type { Notification } from '../models/notification';
 import { writable } from 'svelte/store';
 import type { Writable } from 'svelte/store';
 
-export const notifications_token = writable({
-	value: ""
-})
 
 export const loadNotifications = (messages: Writable<Notification[]>) => {
 	const notifications = sessionStorage.getItem('notifications');
@@ -21,6 +18,4 @@ export const saveNotifications = (messages: Writable<Notification[]>) => {
 	})
 
 	return messages
-
-	// sessionStorage.setItem('notifications', notificationsString);
 };
