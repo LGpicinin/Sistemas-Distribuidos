@@ -7,19 +7,20 @@
 	import { loadNotifications, saveNotifications } from '$lib/helpers/utils/notifications.js';
 	import { onMount, onDestroy } from 'svelte';
 	import { type Notification } from '$lib/helpers/models/notification.js';
+	import { writable } from 'svelte/store';
 
 	let { children, data } = $props();
 	let sidebarOpen: boolean = $state(false);
 	let eventSource: EventSource;
-	let messages: Notification[] = $state([] as Notification[]);
+	let messages = $state(writable([] as Notification[]));
 
 	onMount(() => {
 		eventSource = new EventSource(`${PUBLIC_GATEWAY_ADDRESS}/event?userId=${data.userId}`);
-		messages = loadNotifications();
+		messages = loadNotifications(messages);
 		eventSource.addEventListener(data.userId, (event) => {
-			messages = [JSON.parse(event.data), ...messages];
-			$inspect(messages).with(console.log);
-			saveNotifications(messages);
+			messages.update((not) => [JSON.parse(event.data), ...not]);
+			$inspect($messages).with(console.log);
+			messages = saveNotifications(messages);
 		});
 	});
 
@@ -39,9 +40,8 @@
 		<section class="content">
 			{@render children?.()}
 		</section>
-		{#if !data.isHome}
-			<NotificationBar bind:notifications={messages} />\
-		{/if}
+
+		<NotificationBar bind:notifications={$messages} />
 	</main>
 </div>
 

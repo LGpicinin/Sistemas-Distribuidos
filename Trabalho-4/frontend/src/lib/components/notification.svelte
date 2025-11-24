@@ -60,5 +60,6 @@
 <style>
 	.info {
 		margin-top: 1rem;
+		width: 15vw;
 	}
 </style>

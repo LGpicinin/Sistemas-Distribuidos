@@ -3,6 +3,7 @@
 	import Card from '$lib/components/card.svelte';
 	import Input from '$lib/components/input.svelte';
 	import { type Lance } from '$lib/helpers/models/lance.js';
+	import { enhance } from '$app/forms';
 
 	const { data } = $props();
 
@@ -14,7 +15,7 @@
 </script>
 
 <Card>
-	<form action="?/createLance" method="post">
+	<form action="?/createLance" method="post" use:enhance>
 		<h2>Novo Lance</h2>
 		<Input
 			type="text"

@@ -3,6 +3,7 @@
 	import Input from '$lib/components/input.svelte';
 	import Button from '$lib/components/button.svelte';
 	import { type Leilao } from '$lib/helpers/models/leilao';
+	import { enhance } from '$app/forms';
 
 	let { form } = $props();
 
@@ -15,7 +16,7 @@
 </script>
 
 <Card>
-	<form class="subcard" method="POST" action="?/createLeilao">
+	<form class="subcard" method="POST" action="?/createLeilao" use:enhance>
 		<h2>Criar Leilão</h2>
 		<div class="grid">
 			<Input

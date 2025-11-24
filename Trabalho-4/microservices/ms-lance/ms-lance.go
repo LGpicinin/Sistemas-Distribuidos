@@ -145,6 +145,10 @@ func main() {
 	common.FailOnError(err, "Error connecting to queue")
 	common.ConsumeEvents(qLeiloesFinalizados, chIn, consumeLeiloesFinalizados)
 
+	_, _ = common.CreateOrGetQueueAndBind(
+		common.QUEUE_LANCE_INVALIDADO, common.QUEUE_LANCE_INVALIDADO, chIn,
+	)
+
 	mux := http.NewServeMux()
 	mux.Handle("/new", &newLanceHandler{})
 	fmt.Println("Server running on http://localhost:8080")

@@ -23,7 +23,7 @@
 		top: 4rem;
 		display: flex;
 		flex-direction: column;
-		width: 15vw;
+		width: 20vw;
 		height: 100%;
 		z-index: 2;
 	}
