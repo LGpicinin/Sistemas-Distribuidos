@@ -21,6 +21,8 @@ var activeLeiloes map[string]common.ActiveLeilao = make(map[string]common.Active
 
 type newLanceHandler struct{}
 
+// função que verifica se o novo lance é valido ou não
+// se for, posta na fila de lances validados; caso contrário, posta na de inválidados
 func handleLanceCandidate(lanceCandidate common.Lance) {
 	activeLeilao, ok := activeLeiloes[lanceCandidate.LeilaoID]
 	if !ok {
@@ -54,6 +56,7 @@ func handleLanceCandidate(lanceCandidate common.Lance) {
 	log.Printf("[MS-LANCE] Novo lance validado: \n%s\n", lanceCandidate.Print())
 }
 
+// função que salva novo leilão
 func handleLeilaoIniciado(leilaoByteArray []byte) {
 	var leilao common.Leilao
 	leilao.FromByteArray(leilaoByteArray)
@@ -65,6 +68,7 @@ func handleLeilaoIniciado(leilaoByteArray []byte) {
 	log.Printf("[MS-LANCE] NOVO LEILÃO INICIADO: \n%s\n", leilao.Print())
 }
 
+// função que escuta fila de leilões iniciados
 func consumeLeiloesIniciados(msgs <-chan amqp091.Delivery) {
 	for d := range msgs {
 		// log.Printf("[MS-LANCE] NOVO LEILAO INICIADO: %s", d.Body)
@@ -75,6 +79,7 @@ func consumeLeiloesIniciados(msgs <-chan amqp091.Delivery) {
 	}
 }
 
+// função que remove leilão e publica lance vencedor na fila
 func handleLeilaoFinalizado(leilaoByteArray []byte) {
 	var leilao common.Leilao
 	leilao.FromByteArray(leilaoByteArray)
@@ -97,6 +102,7 @@ func handleLeilaoFinalizado(leilaoByteArray []byte) {
 	}
 }
 
+// função que escuta fila de leilões finalisados
 func consumeLeiloesFinalizados(msgs <-chan amqp091.Delivery) {
 	for d := range msgs {
 		// log.Printf("[MS-LANCE] NOVO LEILAO FINALIZADO: %s", d.Body)
@@ -107,6 +113,8 @@ func consumeLeiloesFinalizados(msgs <-chan amqp091.Delivery) {
 	}
 }
 
+// função que recebe novo lance por requisição http do gateway
+// chama função 'handleLanceCandidate' que trata requisição
 func (h *newLanceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)

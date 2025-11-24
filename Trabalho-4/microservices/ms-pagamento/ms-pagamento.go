@@ -20,6 +20,8 @@ var chOut *amqp091.Channel
 
 type statusPagamentoHandler struct{}
 
+// função que envia lance ganhador para o sistema de pagamento para gerar um link
+// depois, recebe o link gerado e coloca na fila de links
 func handleLeilaoGanhador(lanceByteArray []byte) {
 	var lance common.Lance
 	lance.FromByteArray(lanceByteArray)
@@ -62,6 +64,7 @@ func handleLeilaoGanhador(lanceByteArray []byte) {
 
 }
 
+// função que escuta fila de lances ganhadores
 func consumeLeiloesGanhador(msgs <-chan amqp091.Delivery) {
 	for d := range msgs {
 		// log.Printf("[MS-PAGAMENTO] NOVO LEILAO INICIADO: %s", d.Body)
@@ -72,6 +75,8 @@ func consumeLeiloesGanhador(msgs <-chan amqp091.Delivery) {
 	}
 }
 
+// função que recebe status de pagamento via requisição http do sistema de pagamento externo
+// coloca na fila de status
 func (h *statusPagamentoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)

@@ -13,9 +13,6 @@ namespace Routes
         private string QUEUE_LANCE_VALIDADO = "lance_validado";
         private string QUEUE_LANCE_INVALIDADO = "lance_invalidado";
         private string QUEUE_LEILAO_VENCEDOR = "leilao_vencedor";
-        private string QUEUE_LEILAO_INICIADO = "leilao_iniciado";
-        private string QUEUE_LEILAO_FINALIZADO = "leilao_finalizado";
-
         private string QUEUE_LINK_PAGAMENTO = "link_pagamento";
 
         private string QUEUE_STATUS_PAGAMENTO = "status_pagamento";
@@ -204,6 +201,8 @@ namespace Routes
             await channel.BasicConsumeAsync(QUEUE_LINK_PAGAMENTO, autoAck: false, consumer);
         }
 
+        // recebe requisição sse do usuário
+        // salva sessão http em lista para ser usado depois para envio de notificações
         public async Task SendNotification(HttpContext httpContext)
         {
             httpContext.Request.EnableBuffering();

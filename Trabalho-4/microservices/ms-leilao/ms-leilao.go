@@ -22,6 +22,7 @@ var leiloesSortedByEnd *list.List = list.New()
 type createLeilaoHandler struct{}
 type listLeilaoHandler struct{}
 
+// função que insere novo leilão em lista ordenada por tempo
 func insertionSortOnList(leilaoList *list.List, value common.Leilao, fieldToCompare string) {
 
 	r := reflect.ValueOf(value)
@@ -48,6 +49,7 @@ func insertionSortOnList(leilaoList *list.List, value common.Leilao, fieldToComp
 	}
 }
 
+// função infinita que publica leilão na fila quando ele for iniciado
 func publishWhenStarts(ch *amqp091.Channel, q amqp091.Queue) {
 	for {
 		if leiloesSortedByStart.Len() == 0 {
@@ -69,6 +71,7 @@ func publishWhenStarts(ch *amqp091.Channel, q amqp091.Queue) {
 	}
 }
 
+// função infinita que publica leilão na fila quando ele for finalizado
 func publishWhenFinishes(ch *amqp091.Channel, q amqp091.Queue) {
 	for {
 		if leiloesSortedByEnd.Len() == 0 {
@@ -90,6 +93,8 @@ func publishWhenFinishes(ch *amqp091.Channel, q amqp091.Queue) {
 	}
 }
 
+// recebe requisição http do gateway para criação de novo leilão
+// chama função para inserir na lista de ordenada por tempo de início e na de tempo por fim
 func (h *createLeilaoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -112,6 +117,8 @@ func (h *createLeilaoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(leilao)
 }
 
+// recebe requisição http do gateway para listar leilões ativos
+// envia resposta por http
 func (h *listLeilaoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
