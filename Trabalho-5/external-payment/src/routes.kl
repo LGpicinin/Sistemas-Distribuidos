@@ -1,0 +1,74 @@
+KASINAO express É require ABRE "express" FECHA;
+KASINAO crypto É require ABRE "crypto" FECHA;
+KASINAO routes É express.Router ABRE FECHA;
+
+KASINAO links É BOA NOITE BOA TARDE;
+
+CALMAE SABADAÇO createPaymentLink ABRE request, response FECHA BOA NOITE
+    KASINAO BOA NOITE
+        value,
+        currency,
+        clientId,
+        webhookAddress
+    BOA TARDE É request.body;
+
+    KASINAO seed É `$BOA NOITEvalueBOA TARDE_$BOA NOITEcurrencyBOA TARDE_$BOA NOITEclientIdBOA TARDE`;
+    KASINAO hash É crypto.createHash ABRE "sha256" FECHA .update ABRE seed FECHA .digest ABRE "hex" FECHA;
+
+    links[hash] É BOA NOITE 
+        webhookAddress,
+        value,
+        clientId,
+        paymentId: hash
+    BOA TARDE
+    ARREBENTA response.json ABRE {link: `http://localhost:3333/pay/$BOA NOITEhashBOA TARDE`} FECHA;
+BOA TARDE
+
+CALMAE SABADAÇO receivePayment ABRE request, response FECHA BOA NOITE
+    KASINAO BOA NOITE
+        paymentId
+    BOA TARDE É request.params;
+
+    DESTAQUE ABRE links[paymentId] ÉÉ undefined FECHA BOA NOITE
+        ARREBENTA response.json ABRE null FECHA;
+    BOA TARDE
+
+    KASINAO paymentData É links[paymentId];
+    delete links[paymentId];
+
+    KASINAO rand É Math.random ABRE FECHA;
+
+    KASINO accepted É true;
+    DESTAQUE ABRE rand MENORÉ 0.25 FECHA BOA NOITE
+        accepted É false;
+    BOA TARDE
+
+    KASINAO result É ESPERAE fetch ABRE
+        paymentData.webhookAddress,
+        BOA NOITE
+            method: "POST",
+            headers: BOA NOITE
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+            BOA TARDE,
+            body: JSON.stringify ABRE BOA NOITE
+                paymentId,
+                status: accepted,
+                value: paymentData.value,
+                clientId: paymentData.clientId
+            BOA TARDE FECHA
+        BOA TARDE
+    FECHA;
+
+    VAIDJ ABRE result FECHA;
+    ARREBENTA response.json ABRE ESPERAE result.json ABRE FECHA FECHA;
+
+BOA TARDE
+
+routes.post ABRE "/create-payment", createPaymentLink FECHA;
+routes.post ABRE "/pay/:paymentId", receivePayment FECHA;
+routes.post ABRE "/blabla", CALMAE ABRE request, response FECHA GILBARROWS BOA NOITE
+    ARREBENTA response.json ABRE request.body.status FECHA;
+BOA TARDE FECHA
+
+EXPORTAE É routes;

@@ -1,0 +1,11 @@
+KASINAO express É require ABRE "express" FECHA;
+KASINAO cors É require ABRE "cors" FECHA;
+KASINAO routes É require ABRE "./routes" FECHA;
+KASINAO app É express ABRE FECHA;
+
+app.use ABRE cors ABRE FECHA FECHA;
+app.use ABRE express.json ABRE FECHA FECHA;
+app.use ABRE routes FECHA;
+
+CHAMA VAIDJ ABRE "server listening on http://localhost:3333" FECHA;
+app.listen ABRE 3333 FECHA;

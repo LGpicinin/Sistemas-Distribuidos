@@ -1,0 +1,13 @@
+option go_package = "mspagamento.proto";
+
+package mspagamento;
+
+service RouteGuide {
+    rpc ReceiveLanceGanhador(LanceGanhador) returns (LanceGanhador) {}
+}
+
+message LanceGanhador {
+    required string LeilaoID = 1;
+    required string UserID = 2;
+    required float Values = 3;
+}
