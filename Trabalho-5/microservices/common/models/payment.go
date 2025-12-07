@@ -1,6 +1,7 @@
-package common
+package models
 
 import (
+	common "common/utils"
 	"encoding/json"
 	"fmt"
 )
@@ -26,7 +27,7 @@ func CreatePayment(currency string, userId string, value float32, webhookAddress
 func (payment *Payment) ToByteArray() []byte {
 	paymentByteArray, err := json.Marshal(*payment)
 	if err != nil {
-		FailOnError(err, "Erro ao converter payment para []byte")
+		common.FailOnError(err, "Erro ao converter payment para []byte")
 	}
 
 	return paymentByteArray
@@ -34,7 +35,7 @@ func (payment *Payment) ToByteArray() []byte {
 
 func (payment *Payment) FromByteArray(byteArray []byte) {
 	err := json.Unmarshal(byteArray, payment)
-	FailOnError(err, "Erro ao converter []byte para payment")
+	common.FailOnError(err, "Erro ao converter []byte para payment")
 }
 
 func (payment *Payment) Print() string {

@@ -1,6 +1,7 @@
-package common
+package models
 
 import (
+	common "common/utils"
 	"encoding/json"
 	"fmt"
 )
@@ -24,7 +25,7 @@ func CreateLance(leilaoId string, userId string, value float32) Lance {
 func (lance *Lance) ToByteArray() []byte {
 	leilaoByteArray, err := json.Marshal(*lance)
 	if err != nil {
-		FailOnError(err, "Erro ao converter lance para []byte")
+		common.FailOnError(err, "Erro ao converter lance para []byte")
 	}
 
 	return leilaoByteArray
@@ -32,7 +33,7 @@ func (lance *Lance) ToByteArray() []byte {
 
 func (lance *Lance) FromByteArray(byteArray []byte) {
 	err := json.Unmarshal(byteArray, lance)
-	FailOnError(err, "Erro ao converter []byte para lance")
+	common.FailOnError(err, "Erro ao converter []byte para lance")
 }
 
 func (lance *Lance) Print() string {

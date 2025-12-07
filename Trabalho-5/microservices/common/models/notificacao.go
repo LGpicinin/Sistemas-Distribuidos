@@ -1,6 +1,7 @@
-package common
+package models
 
 import (
+	common "common/utils"
 	"encoding/json"
 )
 
@@ -27,14 +28,14 @@ func CreateNotificacao(lance Lance, status Status) Notificacao {
 
 func (notificacao *Notificacao) ToByteArray() []byte {
 	notificacaoByteArray, err := json.Marshal(*notificacao)
-	FailOnError(err, "Erro ao converter notificação para []byte")
+	common.FailOnError(err, "Erro ao converter notificação para []byte")
 
 	return notificacaoByteArray
 }
 
 func (notificacao *Notificacao) FromByteArray(byteArray []byte) {
 	err := json.Unmarshal(byteArray, notificacao)
-	FailOnError(err, "Erro ao converter []byte para notificação")
+	common.FailOnError(err, "Erro ao converter []byte para notificação")
 }
 
 func (notificacao *Notificacao) Print() string {

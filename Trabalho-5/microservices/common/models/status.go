@@ -1,6 +1,7 @@
-package common
+package models
 
 import (
+	common "common/utils"
 	"encoding/json"
 	"fmt"
 )
@@ -15,7 +16,7 @@ type StatusPayment struct {
 func (status *StatusPayment) ToByteArray() []byte {
 	statusByteArray, err := json.Marshal(*status)
 	if err != nil {
-		FailOnError(err, "Erro ao converter payment para []byte")
+		common.FailOnError(err, "Erro ao converter payment para []byte")
 	}
 
 	return statusByteArray

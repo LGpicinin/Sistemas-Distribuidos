@@ -1,6 +1,7 @@
-package common
+package models
 
 import (
+	common "common/utils"
 	"encoding/json"
 	"time"
 )
@@ -26,7 +27,7 @@ func CreateLeilao(ID string, description string, startDate time.Time, endDate ti
 func (leilao *Leilao) ToByteArray() []byte {
 	leilaoByteArray, err := json.Marshal(*leilao)
 	if err != nil {
-		FailOnError(err, "Erro ao converter leilao para []byte")
+		common.FailOnError(err, "Erro ao converter leilao para []byte")
 	}
 
 	return leilaoByteArray
@@ -34,7 +35,7 @@ func (leilao *Leilao) ToByteArray() []byte {
 
 func (leilao *Leilao) FromByteArray(byteArray []byte) {
 	err := json.Unmarshal(byteArray, leilao)
-	FailOnError(err, "Erro ao converter []byte para leilao")
+	common.FailOnError(err, "Erro ao converter []byte para leilao")
 }
 
 func (leilao *Leilao) HasStarted() bool {

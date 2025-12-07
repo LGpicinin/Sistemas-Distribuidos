@@ -1,6 +1,7 @@
-package common
+package models
 
 import (
+	common "common/utils"
 	"encoding/json"
 )
 
@@ -25,7 +26,7 @@ func CreateLink(li string, userId string) Link {
 func (link *Link) ToByteArray() []byte {
 	linkByteArray, err := json.Marshal(*link)
 	if err != nil {
-		FailOnError(err, "Erro ao converter link para []byte")
+		common.FailOnError(err, "Erro ao converter link para []byte")
 	}
 
 	return linkByteArray
@@ -33,7 +34,7 @@ func (link *Link) ToByteArray() []byte {
 
 func (link *Link) FromByteArray(byteArray []byte) {
 	err := json.Unmarshal(byteArray, link)
-	FailOnError(err, "Erro ao converter []byte para link")
+	common.FailOnError(err, "Erro ao converter []byte para link")
 }
 
 func (link *Link) Print() string {

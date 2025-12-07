@@ -1,0 +1,11 @@
+option go_package = "/";
+
+service LanceService {
+    rpc Create (Lance) returns (Lance);
+}
+
+message Lance {
+    required string LeilaoID = 1;
+    required string UserID = 2;
+    required float Value = 3;
+}
