@@ -1,164 +1,157 @@
 package main
 
 import (
-	common "common"
-	"encoding/json"
+	models "common/models"
+	utils "common/utils"
+	"context"
 	"fmt"
 	"log"
+	"net"
+	"time"
 
+	pb "common/proto_models"
 	"net/http"
 
-	"github.com/rabbitmq/amqp091-go"
+	"google.golang.org/grpc"
 )
 
-var connIn *amqp091.Connection
-var chIn *amqp091.Channel
+var gatewayClient pb.GatewayServiceClient
 
-var connOut *amqp091.Connection
-var chOut *amqp091.Channel
+type server struct {
+	pb.UnimplementedLanceServiceServer
+}
 
-var activeLeiloes map[string]common.ActiveLeilao = make(map[string]common.ActiveLeilao)
-
-type newLanceHandler struct{}
+var activeLeiloes map[string]models.ActiveLeilao = make(map[string]models.ActiveLeilao)
 
 // função que verifica se o novo lance é valido ou não
 // se for, posta na fila de lances validados; caso contrário, posta na de inválidados
-func handleLanceCandidate(lanceCandidate common.Lance) {
+func handleLanceCandidate(lanceCandidate models.Lance) string {
 	activeLeilao, ok := activeLeiloes[lanceCandidate.LeilaoID]
 	if !ok {
 		log.Printf("[MS-LANCE] Erro ao acessar leilão ativo: %v\n", lanceCandidate.LeilaoID)
-		return
+		return http.StatusText(http.StatusNotFound)
 	}
 
 	if lanceCandidate.Value <= activeLeilao.LastValidLance.Value {
 		log.Printf("[MS-LANCE] Lance não válido: \n%s\n", lanceCandidate.Print())
 
-		q, err := common.CreateOrGetQueueAndBind(
-			common.QUEUE_LANCE_INVALIDADO, common.QUEUE_LANCE_INVALIDADO, chIn,
-		)
-		common.FailOnError(err, "Error connecting to queue")
-		common.PublishInQueue(
-			chOut, q, lanceCandidate.ToByteArray(), common.QUEUE_LANCE_INVALIDADO,
-		)
-		return
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		response, err := gatewayClient.PublicaLanceInvalido(ctx, &pb.GLance{
+			LeilaoID: &lanceCandidate.LeilaoID,
+			UserID:   &lanceCandidate.UserID,
+			Value:    &lanceCandidate.Value,
+		})
+		if err != nil {
+			log.Printf("[MS-LANCE] Erro ao publicar lance inválido: %v\n", err)
+		}
+
+		return response.GetStatus()
 	}
 
 	activeLeilao.LastValidLance = lanceCandidate
 
 	activeLeiloes[lanceCandidate.LeilaoID] = activeLeilao
 
-	q, err := common.CreateOrGetQueueAndBind(
-		common.QUEUE_LANCE_VALIDADO, common.QUEUE_LANCE_VALIDADO, chIn,
-	)
-	common.FailOnError(err, "Error connecting to queue")
-	common.PublishInQueue(chOut, q, lanceCandidate.ToByteArray(), common.QUEUE_LANCE_VALIDADO)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	response, err := gatewayClient.PublicaLanceValido(ctx, &pb.GLance{
+		LeilaoID: &lanceCandidate.LeilaoID,
+		UserID:   &lanceCandidate.UserID,
+		Value:    &lanceCandidate.Value,
+	})
+	if err != nil {
+		log.Printf("[MS-LANCE] Erro ao publicar lance válido: %v\n", err)
+	}
 
 	log.Printf("[MS-LANCE] Novo lance validado: \n%s\n", lanceCandidate.Print())
+	return response.GetStatus()
+}
+
+func (s *server) Create(ctx context.Context, in *pb.Lance) (*pb.Status, error) {
+	lance := models.CreateLance(in.GetLeilaoID(), in.GetUserID(), in.GetValue())
+
+	resultStatus := handleLanceCandidate(lance)
+
+	return &pb.Status{Status: &resultStatus, Lance: in}, nil
 }
 
 // função que salva novo leilão
-func handleLeilaoIniciado(leilaoByteArray []byte) {
-	var leilao common.Leilao
-	leilao.FromByteArray(leilaoByteArray)
-
-	activeLeiloes[leilao.ID] = common.ActiveLeilao{
+func handleLeilaoIniciado(leilao models.Leilao) string {
+	activeLeiloes[leilao.ID] = models.ActiveLeilao{
 		Leilao: leilao,
 	}
 
 	log.Printf("[MS-LANCE] NOVO LEILÃO INICIADO: \n%s\n", leilao.Print())
+	return http.StatusText(http.StatusOK)
 }
 
 // função que escuta fila de leilões iniciados
-func consumeLeiloesIniciados(msgs <-chan amqp091.Delivery) {
-	for d := range msgs {
-		// log.Printf("[MS-LANCE] NOVO LEILAO INICIADO: %s", d.Body)
+func (s *server) PublicaLeilaoIniciado(ctx context.Context, in *pb.Leilao) (*pb.LStatus, error) {
+	startDate, _ := time.Parse(time.RFC1123Z, in.GetStartDate())
+	endDate, _ := time.Parse(time.RFC1123Z, in.GetEndDate())
+	leilao := models.CreateLeilao(in.GetID(), in.GetDescription(), startDate, endDate)
 
-		go handleLeilaoIniciado(d.Body)
-
-		d.Ack(false)
-	}
+	response := handleLeilaoIniciado(leilao)
+	return &pb.LStatus{Status: &response, Leilao: in}, nil
 }
 
 // função que remove leilão e publica lance vencedor na fila
-func handleLeilaoFinalizado(leilaoByteArray []byte) {
-	var leilao common.Leilao
-	leilao.FromByteArray(leilaoByteArray)
+func handleLeilaoFinalizado(leilao models.Leilao) string {
+	var response = ""
 
 	activeLeilao, ok := activeLeiloes[leilao.ID]
 	if ok {
 		lastLance := activeLeilao.LastValidLance
-		if lastLance != (common.Lance{}) {
-			q, err := common.CreateOrGetQueueAndBind(
-				common.QUEUE_LEILAO_VENCEDOR, common.QUEUE_LEILAO_VENCEDOR, chOut,
-			)
-			common.FailOnError(err, "Error connecting to queue")
+		if lastLance != (models.Lance{}) {
 
-			common.PublishInQueue(chOut, q, lastLance.ToByteArray(), common.QUEUE_LEILAO_VENCEDOR)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			response_, err := gatewayClient.PublicaLeilaoVencedor(ctx, &pb.GLance{
+				LeilaoID: &lastLance.LeilaoID,
+				UserID:   &lastLance.UserID,
+				Value:    &lastLance.Value,
+			})
+			response = response_.GetStatus()
+			if err != nil {
+				log.Printf("[MS-LANCE] Erro ao publicar lance válido: %v\n", err)
+			}
+
 			log.Printf("[MS-LANCE] NOVO VENCEDOR: \n%s\n", lastLance.Print())
 		}
 
 		delete(activeLeiloes, leilao.ID)
 		log.Printf("[MS-LANCE] LEILÃO FINALIZADO: \n%s\n", leilao.Print())
 	}
+
+	return response
 }
 
 // função que escuta fila de leilões finalisados
-func consumeLeiloesFinalizados(msgs <-chan amqp091.Delivery) {
-	for d := range msgs {
-		// log.Printf("[MS-LANCE] NOVO LEILAO FINALIZADO: %s", d.Body)
+func (s *server) PublicaLeilaoFinalizado(ctx context.Context, in *pb.Leilao) (*pb.LStatus, error) {
+	startDate, _ := time.Parse(time.RFC1123Z, in.GetStartDate())
+	endDate, _ := time.Parse(time.RFC1123Z, in.GetEndDate())
+	leilao := models.CreateLeilao(in.GetID(), in.GetDescription(), startDate, endDate)
 
-		go handleLeilaoFinalizado(d.Body)
-
-		d.Ack(false)
-	}
-}
-
-// função que recebe novo lance por requisição http do gateway
-// chama função 'handleLanceCandidate' que trata requisição
-func (h *newLanceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-	var lance common.Lance
-
-	err := json.NewDecoder(r.Body).Decode(&lance)
-	if err != nil {
-		log.Printf("Erro ao decodificar requisição: %v\n", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	handleLanceCandidate(lance)
-
-	w.WriteHeader(http.StatusCreated)
-	w.Header().Set("Content-type", "application/json")
-	json.NewEncoder(w).Encode(lance)
+	response := handleLeilaoFinalizado(leilao)
+	return &pb.LStatus{Status: &response, Leilao: in}, nil
 }
 
 func main() {
-	connIn, chIn = common.ConnectToBroker()
-	defer connIn.Close()
-	defer chIn.Close()
+	lis, err := net.Listen("tcp", ":8080")
+	utils.FailOnError(err, "Erro ao escutar a porta :8080")
 
-	connOut, chOut = common.ConnectToBroker()
-	defer connOut.Close()
-	defer chOut.Close()
-
-	qLeiloesIniciados, err := common.CreateOrGetQueueAndBind("", common.QUEUE_LEILAO_INICIADO, chIn)
-	common.FailOnError(err, "Error connecting to queue")
-	common.ConsumeEvents(qLeiloesIniciados, chIn, consumeLeiloesIniciados)
-
-	qLeiloesFinalizados, err := common.CreateOrGetQueueAndBind("", common.QUEUE_LEILAO_FINALIZADO, chIn)
-	common.FailOnError(err, "Error connecting to queue")
-	common.ConsumeEvents(qLeiloesFinalizados, chIn, consumeLeiloesFinalizados)
-
-	_, _ = common.CreateOrGetQueueAndBind(
-		common.QUEUE_LANCE_INVALIDADO, common.QUEUE_LANCE_INVALIDADO, chIn,
-	)
-
-	mux := http.NewServeMux()
-	mux.Handle("/new", &newLanceHandler{})
+	s := grpc.NewServer()
+	pb.RegisterLanceServiceServer(s, &server{})
 	fmt.Println("Server running on http://localhost:8080")
-	http.ListenAndServe(":8080", mux)
+
+	gatewayConn, err := grpc.NewClient("localhost:5060")
+	utils.FailOnError(err, "Erro ao conectar ao gateway")
+	defer gatewayConn.Close()
+
+	gatewayClient = pb.NewGatewayServiceClient(gatewayConn)
+
+	if err = s.Serve(lis); err != nil {
+		utils.FailOnError(err, "Erro ao servir")
+	}
 }

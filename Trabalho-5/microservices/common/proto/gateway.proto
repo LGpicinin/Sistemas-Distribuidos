@@ -1,0 +1,18 @@
+option go_package = "proto_models/";
+
+service GatewayService {
+    rpc PublicaLanceInvalido (GLance) returns (GStatus);
+    rpc PublicaLanceValido (GLance) returns (GStatus);
+    rpc PublicaLeilaoVencedor (GLance) returns (GStatus);
+}
+
+message GStatus {
+    required string status = 1;
+    required GLance lance = 2;
+}
+
+message GLance {
+    required string LeilaoID = 1;
+    required string UserID = 2;
+    required float Value = 3;
+}

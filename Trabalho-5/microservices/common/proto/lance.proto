@@ -1,11 +1,26 @@
-option go_package = "/";
+package proto.lance;
+option go_package = "proto_models/";
 
 service LanceService {
-    rpc Create (Lance) returns (Lance);
+    rpc Create (Lance) returns (Status);
+    rpc PublicaLeilaoIniciado (Leilao) returns (Status);
+    rpc PublicaLeilaoFinalizado (Leilao) returns (Status);
+}
+
+message Status {
+    required string status = 1;
+    required Lance lance = 2;
 }
 
 message Lance {
     required string LeilaoID = 1;
     required string UserID = 2;
     required float Value = 3;
+}
+
+message Leilao {
+    required string ID = 1;
+    required string Description = 2;
+    required string StartDate = 3;
+    required string EndDate = 4;
 }

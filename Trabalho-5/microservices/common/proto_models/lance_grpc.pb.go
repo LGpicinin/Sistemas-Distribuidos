@@ -2,10 +2,10 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.0
 // - protoc             v6.30.2
-// source: common/proto/lance.proto
+// source: lance.proto
 
-package _
-_
+package proto_models
+
 import (
 	context "context"
 	grpc "google.golang.org/grpc"
@@ -19,14 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	LanceService_Create_FullMethodName = "/LanceService/Create"
+	LanceService_Create_FullMethodName = "/proto.lance.LanceService/Create"
 )
 
 // LanceServiceClient is the client API for LanceService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LanceServiceClient interface {
-	Create(ctx context.Context, in *Lance, opts ...grpc.CallOption) (*Lance, error)
+	Create(ctx context.Context, in *Lance, opts ...grpc.CallOption) (*Status, error)
 }
 
 type lanceServiceClient struct {
@@ -37,9 +37,9 @@ func NewLanceServiceClient(cc grpc.ClientConnInterface) LanceServiceClient {
 	return &lanceServiceClient{cc}
 }
 
-func (c *lanceServiceClient) Create(ctx context.Context, in *Lance, opts ...grpc.CallOption) (*Lance, error) {
+func (c *lanceServiceClient) Create(ctx context.Context, in *Lance, opts ...grpc.CallOption) (*Status, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Lance)
+	out := new(Status)
 	err := c.cc.Invoke(ctx, LanceService_Create_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (c *lanceServiceClient) Create(ctx context.Context, in *Lance, opts ...grpc
 // All implementations must embed UnimplementedLanceServiceServer
 // for forward compatibility.
 type LanceServiceServer interface {
-	Create(context.Context, *Lance) (*Lance, error)
+	Create(context.Context, *Lance) (*Status, error)
 	mustEmbedUnimplementedLanceServiceServer()
 }
 
@@ -62,7 +62,7 @@ type LanceServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedLanceServiceServer struct{}
 
-func (UnimplementedLanceServiceServer) Create(context.Context, *Lance) (*Lance, error) {
+func (UnimplementedLanceServiceServer) Create(context.Context, *Lance) (*Status, error) {
 	return nil, status.Error(codes.Unimplemented, "method Create not implemented")
 }
 func (UnimplementedLanceServiceServer) mustEmbedUnimplementedLanceServiceServer() {}
@@ -108,7 +108,7 @@ func _LanceService_Create_Handler(srv interface{}, ctx context.Context, dec func
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var LanceService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "LanceService",
+	ServiceName: "proto.lance.LanceService",
 	HandlerType: (*LanceServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -117,5 +117,5 @@ var LanceService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "common/proto/lance.proto",
+	Metadata: "lance.proto",
 }
