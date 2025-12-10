@@ -36,10 +36,12 @@ lanceRouter.SetupRoutes(app);
 leilaoRouter.SetupRoutes(app);
 notificacaoRouter.SetupRoutes(app);
 
-await notificacaoRouter.ConnectCreateChannel();
-await notificacaoRouter.ConsumeLanceEvents();
-await notificacaoRouter.ConsumeStatusEvents();
-await notificacaoRouter.ConsumeLinkEvents();
+GatewayService gatewayService = new GatewayService(notificacaoRouter, leilaoRouter, lanceRouter);
+
+// await notificacaoRouter.ConnectCreateChannel();
+// await notificacaoRouter.ConsumeLanceEvents();
+// await notificacaoRouter.ConsumeStatusEvents();
+// await notificacaoRouter.ConsumeLinkEvents();
 
 // app.UseHttpsRedirection();
 

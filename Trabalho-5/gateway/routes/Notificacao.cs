@@ -79,19 +79,19 @@ namespace Routes
             public string LeilaoId { get; set; }
         }
 
-        public async Task ConnectCreateChannel()
-        {
-            factory.Uri = new Uri("amqp://guest:guest@localhost:5672/");
-            conn = await factory.CreateConnectionAsync();
+        // public async Task ConnectCreateChannel()
+        // {
+        //     factory.Uri = new Uri("amqp://guest:guest@localhost:5672/");
+        //     conn = await factory.CreateConnectionAsync();
 
-            channel = await conn.CreateChannelAsync();
+        //     channel = await conn.CreateChannelAsync();
 
-            await channel.QueueDeclareAsync(QUEUE_LANCE_VALIDADO, true, false, false, null);
-            await channel.QueueBindAsync(QUEUE_LANCE_VALIDADO, EXCHANGE_NAME, QUEUE_LANCE_VALIDADO, null);
+        //     await channel.QueueDeclareAsync(QUEUE_LANCE_VALIDADO, true, false, false, null);
+        //     await channel.QueueBindAsync(QUEUE_LANCE_VALIDADO, EXCHANGE_NAME, QUEUE_LANCE_VALIDADO, null);
 
-            await channel.QueueDeclareAsync(QUEUE_LEILAO_VENCEDOR, true, false, false, null);
-            await channel.QueueBindAsync(QUEUE_LEILAO_VENCEDOR, EXCHANGE_NAME, QUEUE_LEILAO_VENCEDOR, null);
-        }
+        //     await channel.QueueDeclareAsync(QUEUE_LEILAO_VENCEDOR, true, false, false, null);
+        //     await channel.QueueBindAsync(QUEUE_LEILAO_VENCEDOR, EXCHANGE_NAME, QUEUE_LEILAO_VENCEDOR, null);
+        // }
 
         public void SetupRoutes(WebApplication app)
         {
@@ -100,105 +100,46 @@ namespace Routes
             app.MapPost("/cancel", CancelInterest);
         }
 
-        public async Task ConsumeLanceEvents()
+        public async Task ConsumeLanceEvents(LanceDataType lancePlus)
         {
-            var consumer = new AsyncEventingBasicConsumer(channel);
-            consumer.ReceivedAsync += async (sender, eventArgs) =>
+            var lanceSerialized = JsonSerializer.Serialize<LanceDataType>(lancePlus);
+            if (InterestLists.ContainsKey(lancePlus.lance.leilao_id))
             {
-                var routingKey = eventArgs.RoutingKey;
-                byte[] body = eventArgs.Body.ToArray();
-                string message = Encoding.UTF8.GetString(body);
-                var lance = JsonSerializer.Deserialize<LanceData>(message);
-
-                // Acknowledge the message
-                await ((AsyncEventingBasicConsumer)sender)
-                    .Channel.BasicAckAsync(eventArgs.DeliveryTag, multiple: false);
-
-                var lancePlus = new LanceDataType();
-                lancePlus.lance = lance;
-                lancePlus.type = routingKey;
-
-                var lanceSerialized = JsonSerializer.Serialize<LanceDataType>(lancePlus);
-                if (InterestLists.ContainsKey(lance.leilao_id))
+                var interestList = InterestLists[lancePlus.lance.leilao_id].ClientIds;
+                foreach (KeyValuePair<string, int> entry in interestList)
                 {
-                    var interestList = InterestLists[lance.leilao_id].ClientIds;
-                    foreach (KeyValuePair<string, int> entry in interestList)
-                    {
-                        HttpContext context = UserList[entry.Key];
-                        Console.WriteLine(entry.Key);
-                        await context.Response.WriteAsync($"event: {entry.Key}\n");
-                        await context.Response.WriteAsync($"data: {lanceSerialized}\n\n");
-                        await context.Response.Body.FlushAsync();
-                        Console.WriteLine("context");
-                    }
+                    HttpContext context = UserList[entry.Key];
+                    Console.WriteLine(entry.Key);
+                    await context.Response.WriteAsync($"event: {entry.Key}\n");
+                    await context.Response.WriteAsync($"data: {lanceSerialized}\n\n");
+                    await context.Response.Body.FlushAsync();
+                    Console.WriteLine("context");
                 }
-
-            };
-            await channel.BasicConsumeAsync(QUEUE_LANCE_VALIDADO, autoAck: false, consumer);
-            await channel.BasicConsumeAsync(QUEUE_LANCE_INVALIDADO, autoAck: false, consumer);
-            await channel.BasicConsumeAsync(QUEUE_LEILAO_VENCEDOR, autoAck: false, consumer);
+            }
         }
 
-        public async Task ConsumeStatusEvents()
+        public async Task ConsumeStatusEvents(StatusDataType statusPlus)
         {
-            var consumer = new AsyncEventingBasicConsumer(channel);
-            consumer.ReceivedAsync += async (sender, eventArgs) =>
-            {
-                var routingKey = eventArgs.RoutingKey;
-                byte[] body = eventArgs.Body.ToArray();
-                string message = Encoding.UTF8.GetString(body);
-                var status = JsonSerializer.Deserialize<StatusData>(message);
+            var statusSerialized = JsonSerializer.Serialize<StatusDataType>(statusPlus);
 
-                // Acknowledge the message
-                await ((AsyncEventingBasicConsumer)sender)
-                    .Channel.BasicAckAsync(eventArgs.DeliveryTag, multiple: false);
-
-                var statusPlus = new StatusDataType();
-                statusPlus.statusData = status;
-                statusPlus.type = routingKey;
-
-                var lanceSerialized = JsonSerializer.Serialize<StatusDataType>(statusPlus);
-
-                HttpContext context = UserList[status.clientId];
-                Console.WriteLine(status.clientId);
-                await context.Response.WriteAsync($"event: {status.clientId}\n");
-                await context.Response.WriteAsync($"data: {lanceSerialized}\n\n");
-                await context.Response.Body.FlushAsync();
-                Console.WriteLine("context");
-
-            };
-            await channel.BasicConsumeAsync(QUEUE_STATUS_PAGAMENTO, autoAck: false, consumer);
+            HttpContext context = UserList[statusPlus.statusData.clientId];
+            Console.WriteLine(statusPlus.statusData.clientId);
+            await context.Response.WriteAsync($"event: {statusPlus.statusData.clientId}\n");
+            await context.Response.WriteAsync($"data: {statusSerialized}\n\n");
+            await context.Response.Body.FlushAsync();
+            Console.WriteLine("context");
         }
 
-        public async Task ConsumeLinkEvents()
+        public async Task ConsumeLinkEvents(LinkDataType linkPlus)
         {
-            var consumer = new AsyncEventingBasicConsumer(channel);
-            consumer.ReceivedAsync += async (sender, eventArgs) =>
-            {
-                var routingKey = eventArgs.RoutingKey;
-                byte[] body = eventArgs.Body.ToArray();
-                string message = Encoding.UTF8.GetString(body);
-                var link = JsonSerializer.Deserialize<LinkData>(message);
+            var linkSerialized = JsonSerializer.Serialize<LinkDataType>(linkPlus);
 
-                // Acknowledge the message
-                await ((AsyncEventingBasicConsumer)sender)
-                    .Channel.BasicAckAsync(eventArgs.DeliveryTag, multiple: false);
-
-                var linkPlus = new LinkDataType();
-                linkPlus.linkData = link;
-                linkPlus.type = routingKey;
-
-                var lanceSerialized = JsonSerializer.Serialize<LinkDataType>(linkPlus);
-
-                HttpContext context = UserList[link.clientId];
-                Console.WriteLine(link.clientId);
-                await context.Response.WriteAsync($"event: {link.clientId}\n");
-                await context.Response.WriteAsync($"data: {lanceSerialized}\n\n");
-                await context.Response.Body.FlushAsync();
-                Console.WriteLine("context");
-
-            };
-            await channel.BasicConsumeAsync(QUEUE_LINK_PAGAMENTO, autoAck: false, consumer);
+            HttpContext context = UserList[linkPlus.linkData.clientId];
+            Console.WriteLine(linkPlus.linkData.clientId);
+            await context.Response.WriteAsync($"event: {linkPlus.linkData.clientId}\n");
+            await context.Response.WriteAsync($"data: {linkSerialized}\n\n");
+            await context.Response.Body.FlushAsync();
+            Console.WriteLine("context");
         }
 
         // recebe requisição sse do usuário

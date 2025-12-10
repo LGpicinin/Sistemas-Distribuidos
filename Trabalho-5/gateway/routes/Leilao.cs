@@ -1,4 +1,7 @@
 using System.Text.Json;
+using Grpc.Net.Client;
+using GrpcLeilaoServiceClient;
+
 
 namespace Routes
 {
@@ -8,10 +11,17 @@ namespace Routes
         private static string MSLeilaoAddress = "http://localhost:8090";
 
         private Notificacao notificacao;
+        private LeilaoService.LeilaoServiceClient ms_leilao;
 
         public Leilao(Notificacao not)
         {
             notificacao = not;
+        }
+
+        public async Task ConnectCreateChannel()
+        {
+            var channel = GrpcChannel.ForAddress("https://localhost:8090");
+            var ms_leilao = new LeilaoService.LeilaoServiceClient(channel);
         }
 
         public class LeilaoData
@@ -55,17 +65,29 @@ namespace Routes
             string body = await Utils.HTTPHelper.getRequestBody(httpContext);
             using var content = await Utils.HTTPHelper.getRequestContentFromBody(body, httpContext);
 
-            using var response = await httpClient.PostAsync($"{MSLeilaoAddress}/create", content);
+            var leilao = JsonSerializer.Deserialize<LeilaoData>(body);
 
-            httpContext.Response.StatusCode = (int)response.StatusCode;
+            var pbLeilao = new LLeilao
+            {
+                ID = leilao.id,
+                Description = leilao.description,
+                StartDate = leilao.start_date,
+                EndDate = leilao.end_date
+            };
+
+            using var response = await ms_leilao.Create(pbLeilao);
+
+            // using var response = await httpClient.PostAsync($"{MSLeilaoAddress}/create", content);
+
+            httpContext.Response.StatusCode = (int)response.Status;
             if (response.StatusCode.ToString() == "Created")
             {
                 var leilao = JsonSerializer.Deserialize<LeilaoData>(body);
                 notificacao.AddLeilao(leilao!.id);
             }
             httpContext.Response.ContentType = response.Content.Headers.ContentType?.ToString() ?? "application/json";
-            var respBody = await response.Content.ReadAsStringAsync();
-            await httpContext.Response.WriteAsync(respBody);
+            // var respBody = await response.Content.ReadAsStringAsync();
+            await httpContext.Response.WriteAsync("");
         }
 
         public async Task ListLeiloes(HttpContext httpContext)
