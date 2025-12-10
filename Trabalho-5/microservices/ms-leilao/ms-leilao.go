@@ -171,7 +171,7 @@ func main() {
 	pb.RegisterLeilaoServiceServer(s, &server{})
 	fmt.Println("Server running on http://localhost:8090")
 
-	lanceConn, err := grpc.NewClient("localhost:5060")
+	lanceConn, err := grpc.NewClient("localhost:8080")
 	utils.FailOnError(err, "Erro ao conectar ao lance")
 	defer lanceConn.Close()
 
