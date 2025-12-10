@@ -2,7 +2,7 @@
 run: build
 	./bin/ms-leilao &
 	./bin/ms-lance &
-# 	./bin/ms-pagamento &
+	./bin/ms-pagamento &
 
 build: proto ms-leilao ms-lance ms-pagamento
 
@@ -22,10 +22,10 @@ ms-lance: ./ms-lance/ms-lance.go
 	go mod tidy; \
 	go build -o ../bin/ms-lance ./ms-lance.go
 
-# ms-pagamento: ./ms-pagamento/ms-pagamento.go
-# 	cd ./ms-pagamento; \
-# 	go mod tidy; \
-# 	go build -o ../bin/ms-pagamento ./ms-pagamento.go
+ms-pagamento: ./ms-pagamento/ms-pagamento.go
+	cd ./ms-pagamento; \
+	go mod tidy; \
+	go build -o ../bin/ms-pagamento ./ms-pagamento.go
 
 
 

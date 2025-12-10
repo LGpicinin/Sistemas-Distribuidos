@@ -17,6 +17,7 @@ import (
 )
 
 var gatewayClient pb.GatewayServiceClient
+var pagamentoClient pb.PagamentoServiceClient
 
 type server struct {
 	pb.UnimplementedLanceServiceServer
@@ -115,7 +116,18 @@ func handleLeilaoFinalizado(leilao models.Leilao) string {
 			})
 			response = response_.GetStatus()
 			if err != nil {
-				log.Printf("[MS-LANCE] Erro ao publicar lance vencedor: %v\n", err)
+				log.Printf("[MS-LANCE] Erro ao publicar lance vencedor para gateway: %v\n", err)
+			}
+
+			ctx, cancel = context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			_, err = pagamentoClient.PublicaLanceVencedor(ctx, &pb.LanceVencedor{
+				LeilaoID: &lastLance.LeilaoID,
+				UserID:   &lastLance.UserID,
+				Value:    &lastLance.Value,
+			})
+			if err != nil {
+				log.Printf("[MS-LANCE] Erro ao publicar lance vencedor para ms pagamento: %v\n", err)
 			}
 
 			log.Printf("[MS-LANCE] NOVO VENCEDOR: \n%s\n", lastLance.Print())
@@ -144,13 +156,19 @@ func main() {
 
 	s := grpc.NewServer()
 	pb.RegisterLanceServiceServer(s, &server{})
-	fmt.Println("Server running on http://localhost:8080")
+	fmt.Println("Server running on localhost:8080")
 
 	gatewayConn, err := grpc.NewClient("localhost:5060", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	utils.FailOnError(err, "Erro ao conectar ao gateway")
 	defer gatewayConn.Close()
 
 	gatewayClient = pb.NewGatewayServiceClient(gatewayConn)
+
+	pagamentoConn, err := grpc.NewClient("localhost:8101", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	utils.FailOnError(err, "Erro ao conectar ao pagamento")
+	defer pagamentoConn.Close()
+
+	pagamentoClient = pb.NewPagamentoServiceClient(pagamentoConn)
 
 	if err = s.Serve(lis); err != nil {
 		utils.FailOnError(err, "Erro ao servir")

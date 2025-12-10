@@ -4,15 +4,29 @@ service GatewayService {
     rpc PublicaLanceInvalido (GLance) returns (GStatus);
     rpc PublicaLanceValido (GLance) returns (GStatus);
     rpc PublicaLeilaoVencedor (GLance) returns (GStatus);
+    rpc PublicaLinkPagamento (Link) returns (GStatus);
+    rpc PublicaStatusPagamento (StatusPayment) returns (GStatus);
 }
 
 message GStatus {
     required string status = 1;
-    required GLance lance = 2;
+    optional GLance lance = 2;
 }
 
 message GLance {
     required string LeilaoID = 1;
     required string UserID = 2;
     required float Value = 3;
+}
+
+message Link {
+    required string UserID = 1;
+    required string link = 2;
+}
+
+message StatusPayment {
+	required float Value = 1;
+	required string PaymentId = 2;
+	required string UserID = 3;
+	required bool Status = 4;
 }

@@ -24,7 +24,7 @@ const (
 type GStatus struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Status        *string                `protobuf:"bytes,1,req,name=status" json:"status,omitempty"`
-	Lance         *GLance                `protobuf:"bytes,2,req,name=lance" json:"lance,omitempty"`
+	Lance         *GLance                `protobuf:"bytes,2,opt,name=lance" json:"lance,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -133,6 +133,126 @@ func (x *GLance) GetValue() float32 {
 	return 0
 }
 
+type Link struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserID        *string                `protobuf:"bytes,1,req,name=UserID" json:"UserID,omitempty"`
+	Link          *string                `protobuf:"bytes,2,req,name=link" json:"link,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Link) Reset() {
+	*x = Link{}
+	mi := &file_gateway_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Link) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Link) ProtoMessage() {}
+
+func (x *Link) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Link.ProtoReflect.Descriptor instead.
+func (*Link) Descriptor() ([]byte, []int) {
+	return file_gateway_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Link) GetUserID() string {
+	if x != nil && x.UserID != nil {
+		return *x.UserID
+	}
+	return ""
+}
+
+func (x *Link) GetLink() string {
+	if x != nil && x.Link != nil {
+		return *x.Link
+	}
+	return ""
+}
+
+type StatusPayment struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Value         *float32               `protobuf:"fixed32,1,req,name=Value" json:"Value,omitempty"`
+	PaymentId     *string                `protobuf:"bytes,2,req,name=PaymentId" json:"PaymentId,omitempty"`
+	UserID        *string                `protobuf:"bytes,3,req,name=UserID" json:"UserID,omitempty"`
+	Status        *bool                  `protobuf:"varint,4,req,name=Status" json:"Status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StatusPayment) Reset() {
+	*x = StatusPayment{}
+	mi := &file_gateway_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StatusPayment) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StatusPayment) ProtoMessage() {}
+
+func (x *StatusPayment) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StatusPayment.ProtoReflect.Descriptor instead.
+func (*StatusPayment) Descriptor() ([]byte, []int) {
+	return file_gateway_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *StatusPayment) GetValue() float32 {
+	if x != nil && x.Value != nil {
+		return *x.Value
+	}
+	return 0
+}
+
+func (x *StatusPayment) GetPaymentId() string {
+	if x != nil && x.PaymentId != nil {
+		return *x.PaymentId
+	}
+	return ""
+}
+
+func (x *StatusPayment) GetUserID() string {
+	if x != nil && x.UserID != nil {
+		return *x.UserID
+	}
+	return ""
+}
+
+func (x *StatusPayment) GetStatus() bool {
+	if x != nil && x.Status != nil {
+		return *x.Status
+	}
+	return false
+}
+
 var File_gateway_proto protoreflect.FileDescriptor
 
 const file_gateway_proto_rawDesc = "" +
@@ -140,15 +260,25 @@ const file_gateway_proto_rawDesc = "" +
 	"\rgateway.proto\"@\n" +
 	"\aGStatus\x12\x16\n" +
 	"\x06status\x18\x01 \x02(\tR\x06status\x12\x1d\n" +
-	"\x05lance\x18\x02 \x02(\v2\a.GLanceR\x05lance\"R\n" +
+	"\x05lance\x18\x02 \x01(\v2\a.GLanceR\x05lance\"R\n" +
 	"\x06GLance\x12\x1a\n" +
 	"\bLeilaoID\x18\x01 \x02(\tR\bLeilaoID\x12\x16\n" +
 	"\x06UserID\x18\x02 \x02(\tR\x06UserID\x12\x14\n" +
-	"\x05Value\x18\x03 \x02(\x02R\x05Value2\x90\x01\n" +
+	"\x05Value\x18\x03 \x02(\x02R\x05Value\"2\n" +
+	"\x04Link\x12\x16\n" +
+	"\x06UserID\x18\x01 \x02(\tR\x06UserID\x12\x12\n" +
+	"\x04link\x18\x02 \x02(\tR\x04link\"s\n" +
+	"\rStatusPayment\x12\x14\n" +
+	"\x05Value\x18\x01 \x02(\x02R\x05Value\x12\x1c\n" +
+	"\tPaymentId\x18\x02 \x02(\tR\tPaymentId\x12\x16\n" +
+	"\x06UserID\x18\x03 \x02(\tR\x06UserID\x12\x16\n" +
+	"\x06Status\x18\x04 \x02(\bR\x06Status2\xed\x01\n" +
 	"\x0eGatewayService\x12)\n" +
 	"\x14PublicaLanceInvalido\x12\a.GLance\x1a\b.GStatus\x12'\n" +
 	"\x12PublicaLanceValido\x12\a.GLance\x1a\b.GStatus\x12*\n" +
-	"\x15PublicaLeilaoVencedor\x12\a.GLance\x1a\b.GStatusB\x0fZ\rproto_models/"
+	"\x15PublicaLeilaoVencedor\x12\a.GLance\x1a\b.GStatus\x12'\n" +
+	"\x14PublicaLinkPagamento\x12\x05.Link\x1a\b.GStatus\x122\n" +
+	"\x16PublicaStatusPagamento\x12\x0e.StatusPayment\x1a\b.GStatusB\x0fZ\rproto_models/"
 
 var (
 	file_gateway_proto_rawDescOnce sync.Once
@@ -162,21 +292,27 @@ func file_gateway_proto_rawDescGZIP() []byte {
 	return file_gateway_proto_rawDescData
 }
 
-var file_gateway_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_gateway_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_gateway_proto_goTypes = []any{
-	(*GStatus)(nil), // 0: GStatus
-	(*GLance)(nil),  // 1: GLance
+	(*GStatus)(nil),       // 0: GStatus
+	(*GLance)(nil),        // 1: GLance
+	(*Link)(nil),          // 2: Link
+	(*StatusPayment)(nil), // 3: StatusPayment
 }
 var file_gateway_proto_depIdxs = []int32{
 	1, // 0: GStatus.lance:type_name -> GLance
 	1, // 1: GatewayService.PublicaLanceInvalido:input_type -> GLance
 	1, // 2: GatewayService.PublicaLanceValido:input_type -> GLance
 	1, // 3: GatewayService.PublicaLeilaoVencedor:input_type -> GLance
-	0, // 4: GatewayService.PublicaLanceInvalido:output_type -> GStatus
-	0, // 5: GatewayService.PublicaLanceValido:output_type -> GStatus
-	0, // 6: GatewayService.PublicaLeilaoVencedor:output_type -> GStatus
-	4, // [4:7] is the sub-list for method output_type
-	1, // [1:4] is the sub-list for method input_type
+	2, // 4: GatewayService.PublicaLinkPagamento:input_type -> Link
+	3, // 5: GatewayService.PublicaStatusPagamento:input_type -> StatusPayment
+	0, // 6: GatewayService.PublicaLanceInvalido:output_type -> GStatus
+	0, // 7: GatewayService.PublicaLanceValido:output_type -> GStatus
+	0, // 8: GatewayService.PublicaLeilaoVencedor:output_type -> GStatus
+	0, // 9: GatewayService.PublicaLinkPagamento:output_type -> GStatus
+	0, // 10: GatewayService.PublicaStatusPagamento:output_type -> GStatus
+	6, // [6:11] is the sub-list for method output_type
+	1, // [1:6] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -193,7 +329,7 @@ func file_gateway_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gateway_proto_rawDesc), len(file_gateway_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

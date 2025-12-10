@@ -11,7 +11,6 @@ import (
 	"net"
 	"reflect"
 
-	// dto "ms-leilao/DTO"
 	"net/http"
 	"time"
 
@@ -28,9 +27,6 @@ var lanceClient pb.LanceServiceClient
 type server struct {
 	pb.UnimplementedLeilaoServiceServer
 }
-
-type createLeilaoHandler struct{}
-type listLeilaoHandler struct{}
 
 // função que insere novo leilão em lista ordenada por tempo
 func insertionSortOnList(leilaoList *list.List, value models.Leilao, fieldToCompare string) {
@@ -169,7 +165,7 @@ func main() {
 
 	s := grpc.NewServer()
 	pb.RegisterLeilaoServiceServer(s, &server{})
-	fmt.Println("Server running on http://localhost:8090")
+	fmt.Println("Server running on localhost:8090")
 
 	lanceConn, err := grpc.NewClient("localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	utils.FailOnError(err, "Erro ao conectar ao lance")

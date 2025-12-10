@@ -19,9 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	GatewayService_PublicaLanceInvalido_FullMethodName  = "/GatewayService/PublicaLanceInvalido"
-	GatewayService_PublicaLanceValido_FullMethodName    = "/GatewayService/PublicaLanceValido"
-	GatewayService_PublicaLeilaoVencedor_FullMethodName = "/GatewayService/PublicaLeilaoVencedor"
+	GatewayService_PublicaLanceInvalido_FullMethodName   = "/GatewayService/PublicaLanceInvalido"
+	GatewayService_PublicaLanceValido_FullMethodName     = "/GatewayService/PublicaLanceValido"
+	GatewayService_PublicaLeilaoVencedor_FullMethodName  = "/GatewayService/PublicaLeilaoVencedor"
+	GatewayService_PublicaLinkPagamento_FullMethodName   = "/GatewayService/PublicaLinkPagamento"
+	GatewayService_PublicaStatusPagamento_FullMethodName = "/GatewayService/PublicaStatusPagamento"
 )
 
 // GatewayServiceClient is the client API for GatewayService service.
@@ -31,6 +33,8 @@ type GatewayServiceClient interface {
 	PublicaLanceInvalido(ctx context.Context, in *GLance, opts ...grpc.CallOption) (*GStatus, error)
 	PublicaLanceValido(ctx context.Context, in *GLance, opts ...grpc.CallOption) (*GStatus, error)
 	PublicaLeilaoVencedor(ctx context.Context, in *GLance, opts ...grpc.CallOption) (*GStatus, error)
+	PublicaLinkPagamento(ctx context.Context, in *Link, opts ...grpc.CallOption) (*GStatus, error)
+	PublicaStatusPagamento(ctx context.Context, in *StatusPayment, opts ...grpc.CallOption) (*GStatus, error)
 }
 
 type gatewayServiceClient struct {
@@ -71,6 +75,26 @@ func (c *gatewayServiceClient) PublicaLeilaoVencedor(ctx context.Context, in *GL
 	return out, nil
 }
 
+func (c *gatewayServiceClient) PublicaLinkPagamento(ctx context.Context, in *Link, opts ...grpc.CallOption) (*GStatus, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GStatus)
+	err := c.cc.Invoke(ctx, GatewayService_PublicaLinkPagamento_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayServiceClient) PublicaStatusPagamento(ctx context.Context, in *StatusPayment, opts ...grpc.CallOption) (*GStatus, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GStatus)
+	err := c.cc.Invoke(ctx, GatewayService_PublicaStatusPagamento_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GatewayServiceServer is the server API for GatewayService service.
 // All implementations must embed UnimplementedGatewayServiceServer
 // for forward compatibility.
@@ -78,6 +102,8 @@ type GatewayServiceServer interface {
 	PublicaLanceInvalido(context.Context, *GLance) (*GStatus, error)
 	PublicaLanceValido(context.Context, *GLance) (*GStatus, error)
 	PublicaLeilaoVencedor(context.Context, *GLance) (*GStatus, error)
+	PublicaLinkPagamento(context.Context, *Link) (*GStatus, error)
+	PublicaStatusPagamento(context.Context, *StatusPayment) (*GStatus, error)
 	mustEmbedUnimplementedGatewayServiceServer()
 }
 
@@ -96,6 +122,12 @@ func (UnimplementedGatewayServiceServer) PublicaLanceValido(context.Context, *GL
 }
 func (UnimplementedGatewayServiceServer) PublicaLeilaoVencedor(context.Context, *GLance) (*GStatus, error) {
 	return nil, status.Error(codes.Unimplemented, "method PublicaLeilaoVencedor not implemented")
+}
+func (UnimplementedGatewayServiceServer) PublicaLinkPagamento(context.Context, *Link) (*GStatus, error) {
+	return nil, status.Error(codes.Unimplemented, "method PublicaLinkPagamento not implemented")
+}
+func (UnimplementedGatewayServiceServer) PublicaStatusPagamento(context.Context, *StatusPayment) (*GStatus, error) {
+	return nil, status.Error(codes.Unimplemented, "method PublicaStatusPagamento not implemented")
 }
 func (UnimplementedGatewayServiceServer) mustEmbedUnimplementedGatewayServiceServer() {}
 func (UnimplementedGatewayServiceServer) testEmbeddedByValue()                        {}
@@ -172,6 +204,42 @@ func _GatewayService_PublicaLeilaoVencedor_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GatewayService_PublicaLinkPagamento_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Link)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayServiceServer).PublicaLinkPagamento(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GatewayService_PublicaLinkPagamento_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayServiceServer).PublicaLinkPagamento(ctx, req.(*Link))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GatewayService_PublicaStatusPagamento_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StatusPayment)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayServiceServer).PublicaStatusPagamento(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GatewayService_PublicaStatusPagamento_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayServiceServer).PublicaStatusPagamento(ctx, req.(*StatusPayment))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GatewayService_ServiceDesc is the grpc.ServiceDesc for GatewayService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -190,6 +258,14 @@ var GatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PublicaLeilaoVencedor",
 			Handler:    _GatewayService_PublicaLeilaoVencedor_Handler,
+		},
+		{
+			MethodName: "PublicaLinkPagamento",
+			Handler:    _GatewayService_PublicaLinkPagamento_Handler,
+		},
+		{
+			MethodName: "PublicaStatusPagamento",
+			Handler:    _GatewayService_PublicaStatusPagamento_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

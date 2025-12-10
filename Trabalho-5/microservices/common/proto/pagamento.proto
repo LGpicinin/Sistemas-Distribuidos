@@ -1,0 +1,16 @@
+option go_package = "proto_models/";
+
+service PagamentoService {
+    rpc PublicaLanceVencedor (LanceVencedor) returns (PStatus);
+}
+
+message PStatus {
+    required string status = 1;
+    required LanceVencedor lance = 2;
+}
+
+message LanceVencedor {
+    required string LeilaoID = 1;
+    required string UserID = 2;
+    required float Value = 3;
+}

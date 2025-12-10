@@ -6,26 +6,31 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"time"
 
-	"github.com/rabbitmq/amqp091-go"
+	models "common/models"
+	pb "common/proto_models"
+	utils "common/utils"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
-
-var connIn *amqp091.Connection
-var chIn *amqp091.Channel
-
-var connOut *amqp091.Connection
-var chOut *amqp091.Channel
 
 type statusPagamentoHandler struct{}
 
+type server struct {
+	pb.UnimplementedPagamentoServiceServer
+}
+
+var gatewayClient pb.GatewayServiceClient
+
 // função que envia lance ganhador para o sistema de pagamento para gerar um link
 // depois, recebe o link gerado e coloca na fila de links
-// func (s *server) SayHelloAgain(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error)
-func ReceiveLanceGanhador(ctx context.Context, lance *pb.LanceGanhador) {
+func handleLeilaoGanhador(lance models.Lance) string {
 
-	var payment common.Payment = common.CreatePayment("R$", lance.UserID, lance.Value, "http://localhost:8100/status")
+	var payment models.Payment = models.CreatePayment("R$", lance.UserID, lance.Value, "http://localhost:8100/status")
 
 	req, err := http.NewRequest(http.MethodPost, "http://localhost:3333/create-payment", bytes.NewReader(payment.ToByteArray()))
 
@@ -47,31 +52,33 @@ func ReceiveLanceGanhador(ctx context.Context, lance *pb.LanceGanhador) {
 
 	log.Printf("[MS-PAGAMENTO] Novo pagamento gerado: \n%s\n", payment.Print())
 
-	var link common.JustLink
+	var link models.JustLink
 
-	err = json.NewDecoder(res.Body).Decode(&link)
+	_ = json.NewDecoder(res.Body).Decode(&link)
 
-	var link_data common.Link = common.CreateLink(link.Link, lance.UserID)
+	var link_data models.Link = models.CreateLink(link.Link, lance.UserID)
 
-	// q, err := common.CreateOrGetQueueAndBind(
-	// 	common.QUEUE_LINK_PAGAMENTO, common.QUEUE_LINK_PAGAMENTO, chIn,
-	// )
-	// common.FailOnError(err, "Error connecting to queue")
-	// common.PublishInQueue(chOut, q, link_data.ToByteArray(), common.QUEUE_LINK_PAGAMENTO)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	_, err = gatewayClient.PublicaLinkPagamento(ctx, &pb.Link{
+		UserID: &link_data.UserID,
+		Link:   &link_data.Link,
+	})
+	if err != nil {
+		log.Printf("[MS-LEILAO] Erro ao publicar leilao iniciado: %v\n", err)
+	}
 
 	log.Printf("[MS-PAGAMENTO] Novo link gerado: \n%s\n", link_data.Print())
-
+	return http.StatusText(http.StatusOK)
 }
 
 // função que escuta fila de lances ganhadores
-func consumeLeiloesGanhador(msgs <-chan amqp091.Delivery) {
-	for d := range msgs {
-		// log.Printf("[MS-PAGAMENTO] NOVO LEILAO INICIADO: %s", d.Body)
+func (s *server) PublicaLanceVencedor(ctx context.Context, in *pb.LanceVencedor) (*pb.PStatus, error) {
+	lance := models.CreateLance(in.GetLeilaoID(), in.GetUserID(), in.GetValue())
 
-		go handleLeilaoGanhador(d.Body)
+	response := handleLeilaoGanhador(lance)
 
-		d.Ack(false)
-	}
+	return &pb.PStatus{Status: &response, Lance: in}, nil
 }
 
 // função que recebe status de pagamento via requisição http do sistema de pagamento externo
@@ -83,45 +90,45 @@ func (h *statusPagamentoHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	var status common.StatusPayment
+	var status models.StatusPayment
 
-	err := json.NewDecoder(r.Body).Decode(&status)
+	_ = json.NewDecoder(r.Body).Decode(&status)
 
-	q, err := common.CreateOrGetQueueAndBind(
-		common.QUEUE_STATUS_PAGAMENTO, common.QUEUE_STATUS_PAGAMENTO, chIn,
-	)
-	common.FailOnError(err, "Error connecting to queue")
-	common.PublishInQueue(chOut, q, status.ToByteArray(), common.QUEUE_STATUS_PAGAMENTO)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	_, err := gatewayClient.PublicaStatusPagamento(ctx, &pb.StatusPayment{
+		Value:     &status.Value,
+		PaymentId: &status.PaymentId,
+		UserID:    &status.UserID,
+		Status:    &status.Status,
+	})
+	if err != nil {
+		log.Printf("[MS-LEILAO] Erro ao publicar leilao iniciado: %v\n", err)
+	}
 
 	log.Printf("[MS-PAGAMENTO] Novo pagamento gerado: \n%s\n", status.Print())
 }
 
 func main() {
-	connIn, chIn = common.ConnectToBroker()
-	defer connIn.Close()
-	defer chIn.Close()
+	lis, err := net.Listen("tcp", ":8101")
+	utils.FailOnError(err, "Erro ao escutar a porta :8101")
 
-	connOut, chOut = common.ConnectToBroker()
-	defer connOut.Close()
-	defer chOut.Close()
+	s := grpc.NewServer()
+	pb.RegisterPagamentoServiceServer(s, &server{})
+	fmt.Println("GRPC Server running on localhost:8101")
 
-	qLeiloesGanhador, err := common.CreateOrGetQueueAndBind(
-		"", common.QUEUE_LEILAO_VENCEDOR, chIn,
-	) // necessário verificar se pode ou não nomear fila
-	common.FailOnError(err, "Error connecting to queue")
-	common.ConsumeEvents(qLeiloesGanhador, chIn, consumeLeiloesGanhador)
+	gatewayConn, err := grpc.NewClient("localhost:5060", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	utils.FailOnError(err, "Erro ao conectar ao gateway")
+	defer gatewayConn.Close()
 
-	q1, err := common.CreateOrGetQueueAndBind(
-		common.QUEUE_LINK_PAGAMENTO, common.QUEUE_LINK_PAGAMENTO, chIn,
-	)
-	q2, err := common.CreateOrGetQueueAndBind(
-		common.QUEUE_STATUS_PAGAMENTO, common.QUEUE_STATUS_PAGAMENTO, chIn,
-	)
-	fmt.Println(q1.Name)
-	fmt.Println(q2.Name)
+	gatewayClient = pb.NewGatewayServiceClient(gatewayConn)
 
 	mux := http.NewServeMux()
 	mux.Handle("/status", &statusPagamentoHandler{})
 	fmt.Println("Server running on http://localhost:8100")
-	http.ListenAndServe(":8100", mux)
+	go http.ListenAndServe(":8100", mux)
+
+	if err = s.Serve(lis); err != nil {
+		utils.FailOnError(err, "Erro ao servir")
+	}
 }
