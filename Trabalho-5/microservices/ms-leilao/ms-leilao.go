@@ -1,11 +1,14 @@
 package main
 
 import (
-	common "common"
+	models "common/models"
+	pb "common/proto_models"
+	utils "common/utils"
 	"container/list"
-	"encoding/json"
+	"context"
 	"fmt"
 	"log"
+	"net"
 	"reflect"
 
 	// dto "ms-leilao/DTO"
@@ -13,17 +16,24 @@ import (
 	"time"
 
 	"github.com/rabbitmq/amqp091-go"
+	"google.golang.org/grpc"
 )
 
-var activeLeiloes map[string]common.Leilao = make(map[string]common.Leilao)
+var activeLeiloes map[string]models.Leilao = make(map[string]models.Leilao)
 var leiloesSortedByStart *list.List = list.New()
 var leiloesSortedByEnd *list.List = list.New()
+
+var lanceClient pb.LanceServiceClient
+
+type server struct {
+	pb.UnimplementedLeilaoServiceServer
+}
 
 type createLeilaoHandler struct{}
 type listLeilaoHandler struct{}
 
 // função que insere novo leilão em lista ordenada por tempo
-func insertionSortOnList(leilaoList *list.List, value common.Leilao, fieldToCompare string) {
+func insertionSortOnList(leilaoList *list.List, value models.Leilao, fieldToCompare string) {
 
 	r := reflect.ValueOf(value)
 	fieldValue := reflect.Indirect(r).FieldByName(fieldToCompare).Interface().(time.Time)
@@ -33,7 +43,7 @@ func insertionSortOnList(leilaoList *list.List, value common.Leilao, fieldToComp
 	} else {
 		var k *list.Element = nil
 		for e := leilaoList.Front(); e != nil; e = e.Next() {
-			e_r := reflect.ValueOf(e.Value.(common.Leilao))
+			e_r := reflect.ValueOf(e.Value.(models.Leilao))
 			e_value := reflect.Indirect(e_r).FieldByName(fieldToCompare).Interface().(time.Time)
 
 			if e_value.Compare(fieldValue) > 0 {
@@ -57,13 +67,26 @@ func publishWhenStarts(ch *amqp091.Channel, q amqp091.Queue) {
 		}
 
 		first := leiloesSortedByStart.Front()
-		firstLeilao := first.Value.(common.Leilao)
+		firstLeilao := first.Value.(models.Leilao)
 
 		if !firstLeilao.HasStarted() {
 			continue
 		}
 
-		common.PublishInQueue(ch, q, firstLeilao.ToByteArray(), common.QUEUE_LEILAO_INICIADO)
+		startDate := firstLeilao.StartDate.Format("2006-01-02T15:04:05.999Z")
+		endDate := firstLeilao.EndDate.Format("2006-01-02T15:04:05.999Z")
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		_, err := lanceClient.PublicaLeilaoIniciado(ctx, &pb.Leilao{
+			ID:          &firstLeilao.ID,
+			Description: &firstLeilao.Description,
+			StartDate:   &startDate,
+			EndDate:     &endDate,
+		})
+		if err != nil {
+			log.Printf("[MS-LEILAO] Erro ao publicar leilao iniciado: %v\n", err)
+		}
 		activeLeiloes[firstLeilao.ID] = firstLeilao
 		leiloesSortedByStart.Remove(first)
 
@@ -79,13 +102,26 @@ func publishWhenFinishes(ch *amqp091.Channel, q amqp091.Queue) {
 		}
 
 		first := leiloesSortedByEnd.Front()
-		firstLeilao := first.Value.(common.Leilao)
+		firstLeilao := first.Value.(models.Leilao)
 
 		if !firstLeilao.HasEnded() {
 			continue
 		}
 
-		common.PublishInQueue(ch, q, firstLeilao.ToByteArray(), common.QUEUE_LEILAO_FINALIZADO)
+		startDate := firstLeilao.StartDate.Format("2006-01-02T15:04:05.999Z")
+		endDate := firstLeilao.EndDate.Format("2006-01-02T15:04:05.999Z")
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		_, err := lanceClient.PublicaLeilaoFinalizado(ctx, &pb.Leilao{
+			ID:          &firstLeilao.ID,
+			Description: &firstLeilao.Description,
+			StartDate:   &startDate,
+			EndDate:     &endDate,
+		})
+		if err != nil {
+			log.Printf("[MS-LEILAO] Erro ao publicar leilao iniciado: %v\n", err)
+		}
 		leiloesSortedByEnd.Remove(first)
 		delete(activeLeiloes, firstLeilao.ID)
 
@@ -95,61 +131,53 @@ func publishWhenFinishes(ch *amqp091.Channel, q amqp091.Queue) {
 
 // recebe requisição http do gateway para criação de novo leilão
 // chama função para inserir na lista de ordenada por tempo de início e na de tempo por fim
-func (h *createLeilaoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-	var leilao common.Leilao
+func (s *server) Create(ctx context.Context, in *pb.LLeilao) (*pb.LStatus, error) {
+	startDate, _ := time.Parse("2006-01-02T15:04:05.999Z", in.GetStartDate())
+	endDate, _ := time.Parse("2006-01-02T15:04:05.999Z", in.GetEndDate())
 
-	err := json.NewDecoder(r.Body).Decode(&leilao)
-	if err != nil {
-		log.Printf("Erro ao decodificar requisição: %v\n", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	leilao := models.CreateLeilao(in.GetID(), in.GetDescription(), startDate, endDate)
 
 	insertionSortOnList(leiloesSortedByStart, leilao, "StartDate")
 	insertionSortOnList(leiloesSortedByEnd, leilao, "EndDate")
 
-	w.WriteHeader(http.StatusCreated)
-	w.Header().Set("Content-type", "application/json")
-	json.NewEncoder(w).Encode(leilao)
+	status := http.StatusText(http.StatusCreated)
+	return &pb.LStatus{Status: &status, Leilao: in}, nil
 }
 
 // recebe requisição http do gateway para listar leilões ativos
 // envia resposta por http
-func (h *listLeilaoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	var leiloes []common.Leilao
+func (s *server) List(in *pb.Empty, stream pb.LeilaoService_ListServer) error {
 	for _, activeLeilao := range activeLeiloes {
-		leiloes = append(leiloes, activeLeilao)
+		startDate := activeLeilao.StartDate.Format("2006-01-02T15:04:05.999Z")
+		endDate := activeLeilao.EndDate.Format("2006-01-02T15:04:05.999Z")
+		if err := stream.Send(&pb.LLeilao{
+			ID:          &activeLeilao.ID,
+			Description: &activeLeilao.Description,
+			StartDate:   &startDate,
+			EndDate:     &endDate,
+		}); err != nil {
+			return err
+		}
 	}
 
-	w.Header().Set("Content-type", "application/json")
-	json.NewEncoder(w).Encode(leiloes)
+	return nil
 }
 
 func main() {
-	conn, ch := common.ConnectToBroker()
-	defer conn.Close()
-	defer ch.Close()
+	lis, err := net.Listen("tcp", ":8090")
+	utils.FailOnError(err, "Erro ao escutar a porta :8090")
 
-	qIniciado, err := common.CreateOrGetQueueAndBind("", common.QUEUE_LEILAO_INICIADO, ch)
-	common.FailOnError(err, "Error connecting to queue")
-	qFinalizado, err := common.CreateOrGetQueueAndBind(common.QUEUE_LEILAO_FINALIZADO, common.QUEUE_LEILAO_FINALIZADO, ch)
-	common.FailOnError(err, "Error connecting to queue")
-
-	go publishWhenStarts(ch, qIniciado)
-	go publishWhenFinishes(ch, qFinalizado)
-
-	mux := http.NewServeMux()
-	mux.Handle("/create", &createLeilaoHandler{})
-	mux.Handle("/list", &listLeilaoHandler{})
+	s := grpc.NewServer()
+	pb.RegisterLeilaoServiceServer(s, &server{})
 	fmt.Println("Server running on http://localhost:8090")
-	http.ListenAndServe(":8090", mux)
+
+	lanceConn, err := grpc.NewClient("localhost:5060")
+	utils.FailOnError(err, "Erro ao conectar ao lance")
+	defer lanceConn.Close()
+
+	lanceClient = pb.NewLanceServiceClient(lanceConn)
+
+	if err = s.Serve(lis); err != nil {
+		utils.FailOnError(err, "Erro ao servir")
+	}
 }

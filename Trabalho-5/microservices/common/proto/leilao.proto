@@ -1,0 +1,20 @@
+option go_package = "proto_models/";
+
+service LeilaoService {
+    rpc Create (LLeilao) returns (LStatus);
+    rpc List (Empty) returns (stream LLeilao);
+}
+
+message Empty {}
+
+message LStatus {
+    required string status = 1;
+    required LLeilao leilao = 2;
+}
+
+message LLeilao {
+    required string ID = 1;
+    required string Description = 2;
+    required string StartDate = 3;
+    required string EndDate = 4;
+}

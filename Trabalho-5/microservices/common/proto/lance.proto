@@ -9,7 +9,8 @@ service LanceService {
 
 message Status {
     required string status = 1;
-    required Lance lance = 2;
+    optional Lance lance = 2;
+    optional Leilao leilao = 3;
 }
 
 message Lance {

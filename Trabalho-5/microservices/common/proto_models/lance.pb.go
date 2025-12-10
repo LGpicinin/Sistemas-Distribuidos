@@ -24,7 +24,8 @@ const (
 type Status struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Status        *string                `protobuf:"bytes,1,req,name=status" json:"status,omitempty"`
-	Lance         *Lance                 `protobuf:"bytes,2,req,name=lance" json:"lance,omitempty"`
+	Lance         *Lance                 `protobuf:"bytes,2,opt,name=lance" json:"lance,omitempty"`
+	Leilao        *Leilao                `protobuf:"bytes,3,opt,name=leilao" json:"leilao,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -69,6 +70,13 @@ func (x *Status) GetStatus() string {
 func (x *Status) GetLance() *Lance {
 	if x != nil {
 		return x.Lance
+	}
+	return nil
+}
+
+func (x *Status) GetLeilao() *Leilao {
+	if x != nil {
+		return x.Leilao
 	}
 	return nil
 }
@@ -133,20 +141,96 @@ func (x *Lance) GetValue() float32 {
 	return 0
 }
 
+type Leilao struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ID            *string                `protobuf:"bytes,1,req,name=ID" json:"ID,omitempty"`
+	Description   *string                `protobuf:"bytes,2,req,name=Description" json:"Description,omitempty"`
+	StartDate     *string                `protobuf:"bytes,3,req,name=StartDate" json:"StartDate,omitempty"`
+	EndDate       *string                `protobuf:"bytes,4,req,name=EndDate" json:"EndDate,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Leilao) Reset() {
+	*x = Leilao{}
+	mi := &file_lance_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Leilao) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Leilao) ProtoMessage() {}
+
+func (x *Leilao) ProtoReflect() protoreflect.Message {
+	mi := &file_lance_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Leilao.ProtoReflect.Descriptor instead.
+func (*Leilao) Descriptor() ([]byte, []int) {
+	return file_lance_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Leilao) GetID() string {
+	if x != nil && x.ID != nil {
+		return *x.ID
+	}
+	return ""
+}
+
+func (x *Leilao) GetDescription() string {
+	if x != nil && x.Description != nil {
+		return *x.Description
+	}
+	return ""
+}
+
+func (x *Leilao) GetStartDate() string {
+	if x != nil && x.StartDate != nil {
+		return *x.StartDate
+	}
+	return ""
+}
+
+func (x *Leilao) GetEndDate() string {
+	if x != nil && x.EndDate != nil {
+		return *x.EndDate
+	}
+	return ""
+}
+
 var File_lance_proto protoreflect.FileDescriptor
 
 const file_lance_proto_rawDesc = "" +
 	"\n" +
-	"\vlance.proto\x12\vproto.lance\"J\n" +
+	"\vlance.proto\x12\vproto.lance\"w\n" +
 	"\x06Status\x12\x16\n" +
 	"\x06status\x18\x01 \x02(\tR\x06status\x12(\n" +
-	"\x05lance\x18\x02 \x02(\v2\x12.proto.lance.LanceR\x05lance\"Q\n" +
+	"\x05lance\x18\x02 \x01(\v2\x12.proto.lance.LanceR\x05lance\x12+\n" +
+	"\x06leilao\x18\x03 \x01(\v2\x13.proto.lance.LeilaoR\x06leilao\"Q\n" +
 	"\x05Lance\x12\x1a\n" +
 	"\bLeilaoID\x18\x01 \x02(\tR\bLeilaoID\x12\x16\n" +
 	"\x06UserID\x18\x02 \x02(\tR\x06UserID\x12\x14\n" +
-	"\x05Value\x18\x03 \x02(\x02R\x05Value2A\n" +
+	"\x05Value\x18\x03 \x02(\x02R\x05Value\"r\n" +
+	"\x06Leilao\x12\x0e\n" +
+	"\x02ID\x18\x01 \x02(\tR\x02ID\x12 \n" +
+	"\vDescription\x18\x02 \x02(\tR\vDescription\x12\x1c\n" +
+	"\tStartDate\x18\x03 \x02(\tR\tStartDate\x12\x18\n" +
+	"\aEndDate\x18\x04 \x02(\tR\aEndDate2\xc9\x01\n" +
 	"\fLanceService\x121\n" +
-	"\x06Create\x12\x12.proto.lance.Lance\x1a\x13.proto.lance.StatusB\x0fZ\rproto_models/"
+	"\x06Create\x12\x12.proto.lance.Lance\x1a\x13.proto.lance.Status\x12A\n" +
+	"\x15PublicaLeilaoIniciado\x12\x13.proto.lance.Leilao\x1a\x13.proto.lance.Status\x12C\n" +
+	"\x17PublicaLeilaoFinalizado\x12\x13.proto.lance.Leilao\x1a\x13.proto.lance.StatusB\x0fZ\rproto_models/"
 
 var (
 	file_lance_proto_rawDescOnce sync.Once
@@ -160,20 +244,26 @@ func file_lance_proto_rawDescGZIP() []byte {
 	return file_lance_proto_rawDescData
 }
 
-var file_lance_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_lance_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_lance_proto_goTypes = []any{
 	(*Status)(nil), // 0: proto.lance.Status
 	(*Lance)(nil),  // 1: proto.lance.Lance
+	(*Leilao)(nil), // 2: proto.lance.Leilao
 }
 var file_lance_proto_depIdxs = []int32{
 	1, // 0: proto.lance.Status.lance:type_name -> proto.lance.Lance
-	1, // 1: proto.lance.LanceService.Create:input_type -> proto.lance.Lance
-	0, // 2: proto.lance.LanceService.Create:output_type -> proto.lance.Status
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	2, // 1: proto.lance.Status.leilao:type_name -> proto.lance.Leilao
+	1, // 2: proto.lance.LanceService.Create:input_type -> proto.lance.Lance
+	2, // 3: proto.lance.LanceService.PublicaLeilaoIniciado:input_type -> proto.lance.Leilao
+	2, // 4: proto.lance.LanceService.PublicaLeilaoFinalizado:input_type -> proto.lance.Leilao
+	0, // 5: proto.lance.LanceService.Create:output_type -> proto.lance.Status
+	0, // 6: proto.lance.LanceService.PublicaLeilaoIniciado:output_type -> proto.lance.Status
+	0, // 7: proto.lance.LanceService.PublicaLeilaoFinalizado:output_type -> proto.lance.Status
+	5, // [5:8] is the sub-list for method output_type
+	2, // [2:5] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_lance_proto_init() }
@@ -187,7 +277,7 @@ func file_lance_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_lance_proto_rawDesc), len(file_lance_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

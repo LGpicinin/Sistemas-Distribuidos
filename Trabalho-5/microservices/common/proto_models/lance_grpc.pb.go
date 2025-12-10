@@ -19,7 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	LanceService_Create_FullMethodName = "/proto.lance.LanceService/Create"
+	LanceService_Create_FullMethodName                  = "/proto.lance.LanceService/Create"
+	LanceService_PublicaLeilaoIniciado_FullMethodName   = "/proto.lance.LanceService/PublicaLeilaoIniciado"
+	LanceService_PublicaLeilaoFinalizado_FullMethodName = "/proto.lance.LanceService/PublicaLeilaoFinalizado"
 )
 
 // LanceServiceClient is the client API for LanceService service.
@@ -27,6 +29,8 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LanceServiceClient interface {
 	Create(ctx context.Context, in *Lance, opts ...grpc.CallOption) (*Status, error)
+	PublicaLeilaoIniciado(ctx context.Context, in *Leilao, opts ...grpc.CallOption) (*Status, error)
+	PublicaLeilaoFinalizado(ctx context.Context, in *Leilao, opts ...grpc.CallOption) (*Status, error)
 }
 
 type lanceServiceClient struct {
@@ -47,11 +51,33 @@ func (c *lanceServiceClient) Create(ctx context.Context, in *Lance, opts ...grpc
 	return out, nil
 }
 
+func (c *lanceServiceClient) PublicaLeilaoIniciado(ctx context.Context, in *Leilao, opts ...grpc.CallOption) (*Status, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Status)
+	err := c.cc.Invoke(ctx, LanceService_PublicaLeilaoIniciado_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *lanceServiceClient) PublicaLeilaoFinalizado(ctx context.Context, in *Leilao, opts ...grpc.CallOption) (*Status, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Status)
+	err := c.cc.Invoke(ctx, LanceService_PublicaLeilaoFinalizado_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LanceServiceServer is the server API for LanceService service.
 // All implementations must embed UnimplementedLanceServiceServer
 // for forward compatibility.
 type LanceServiceServer interface {
 	Create(context.Context, *Lance) (*Status, error)
+	PublicaLeilaoIniciado(context.Context, *Leilao) (*Status, error)
+	PublicaLeilaoFinalizado(context.Context, *Leilao) (*Status, error)
 	mustEmbedUnimplementedLanceServiceServer()
 }
 
@@ -64,6 +90,12 @@ type UnimplementedLanceServiceServer struct{}
 
 func (UnimplementedLanceServiceServer) Create(context.Context, *Lance) (*Status, error) {
 	return nil, status.Error(codes.Unimplemented, "method Create not implemented")
+}
+func (UnimplementedLanceServiceServer) PublicaLeilaoIniciado(context.Context, *Leilao) (*Status, error) {
+	return nil, status.Error(codes.Unimplemented, "method PublicaLeilaoIniciado not implemented")
+}
+func (UnimplementedLanceServiceServer) PublicaLeilaoFinalizado(context.Context, *Leilao) (*Status, error) {
+	return nil, status.Error(codes.Unimplemented, "method PublicaLeilaoFinalizado not implemented")
 }
 func (UnimplementedLanceServiceServer) mustEmbedUnimplementedLanceServiceServer() {}
 func (UnimplementedLanceServiceServer) testEmbeddedByValue()                      {}
@@ -104,6 +136,42 @@ func _LanceService_Create_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LanceService_PublicaLeilaoIniciado_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Leilao)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LanceServiceServer).PublicaLeilaoIniciado(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LanceService_PublicaLeilaoIniciado_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LanceServiceServer).PublicaLeilaoIniciado(ctx, req.(*Leilao))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LanceService_PublicaLeilaoFinalizado_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Leilao)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LanceServiceServer).PublicaLeilaoFinalizado(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LanceService_PublicaLeilaoFinalizado_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LanceServiceServer).PublicaLeilaoFinalizado(ctx, req.(*Leilao))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LanceService_ServiceDesc is the grpc.ServiceDesc for LanceService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +182,14 @@ var LanceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Create",
 			Handler:    _LanceService_Create_Handler,
+		},
+		{
+			MethodName: "PublicaLeilaoIniciado",
+			Handler:    _LanceService_PublicaLeilaoIniciado_Handler,
+		},
+		{
+			MethodName: "PublicaLeilaoFinalizado",
+			Handler:    _LanceService_PublicaLeilaoFinalizado_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

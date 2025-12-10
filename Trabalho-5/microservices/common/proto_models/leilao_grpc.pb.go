@@ -19,16 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	LeilaoService_PublicaLeilaoIniciado_FullMethodName   = "/LeilaoService/PublicaLeilaoIniciado"
-	LeilaoService_PublicaLeilaoFinalizado_FullMethodName = "/LeilaoService/PublicaLeilaoFinalizado"
+	LeilaoService_Create_FullMethodName = "/LeilaoService/Create"
+	LeilaoService_List_FullMethodName   = "/LeilaoService/List"
 )
 
 // LeilaoServiceClient is the client API for LeilaoService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LeilaoServiceClient interface {
-	PublicaLeilaoIniciado(ctx context.Context, in *Leilao, opts ...grpc.CallOption) (*LStatus, error)
-	PublicaLeilaoFinalizado(ctx context.Context, in *Leilao, opts ...grpc.CallOption) (*LStatus, error)
+	Create(ctx context.Context, in *LLeilao, opts ...grpc.CallOption) (*LStatus, error)
+	List(ctx context.Context, in *Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LLeilao], error)
 }
 
 type leilaoServiceClient struct {
@@ -39,32 +39,41 @@ func NewLeilaoServiceClient(cc grpc.ClientConnInterface) LeilaoServiceClient {
 	return &leilaoServiceClient{cc}
 }
 
-func (c *leilaoServiceClient) PublicaLeilaoIniciado(ctx context.Context, in *Leilao, opts ...grpc.CallOption) (*LStatus, error) {
+func (c *leilaoServiceClient) Create(ctx context.Context, in *LLeilao, opts ...grpc.CallOption) (*LStatus, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LStatus)
-	err := c.cc.Invoke(ctx, LeilaoService_PublicaLeilaoIniciado_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, LeilaoService_Create_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *leilaoServiceClient) PublicaLeilaoFinalizado(ctx context.Context, in *Leilao, opts ...grpc.CallOption) (*LStatus, error) {
+func (c *leilaoServiceClient) List(ctx context.Context, in *Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LLeilao], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(LStatus)
-	err := c.cc.Invoke(ctx, LeilaoService_PublicaLeilaoFinalizado_FullMethodName, in, out, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &LeilaoService_ServiceDesc.Streams[0], LeilaoService_List_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &grpc.GenericClientStream[Empty, LLeilao]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
 }
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type LeilaoService_ListClient = grpc.ServerStreamingClient[LLeilao]
 
 // LeilaoServiceServer is the server API for LeilaoService service.
 // All implementations must embed UnimplementedLeilaoServiceServer
 // for forward compatibility.
 type LeilaoServiceServer interface {
-	PublicaLeilaoIniciado(context.Context, *Leilao) (*LStatus, error)
-	PublicaLeilaoFinalizado(context.Context, *Leilao) (*LStatus, error)
+	Create(context.Context, *LLeilao) (*LStatus, error)
+	List(*Empty, grpc.ServerStreamingServer[LLeilao]) error
 	mustEmbedUnimplementedLeilaoServiceServer()
 }
 
@@ -75,11 +84,11 @@ type LeilaoServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedLeilaoServiceServer struct{}
 
-func (UnimplementedLeilaoServiceServer) PublicaLeilaoIniciado(context.Context, *Leilao) (*LStatus, error) {
-	return nil, status.Error(codes.Unimplemented, "method PublicaLeilaoIniciado not implemented")
+func (UnimplementedLeilaoServiceServer) Create(context.Context, *LLeilao) (*LStatus, error) {
+	return nil, status.Error(codes.Unimplemented, "method Create not implemented")
 }
-func (UnimplementedLeilaoServiceServer) PublicaLeilaoFinalizado(context.Context, *Leilao) (*LStatus, error) {
-	return nil, status.Error(codes.Unimplemented, "method PublicaLeilaoFinalizado not implemented")
+func (UnimplementedLeilaoServiceServer) List(*Empty, grpc.ServerStreamingServer[LLeilao]) error {
+	return status.Error(codes.Unimplemented, "method List not implemented")
 }
 func (UnimplementedLeilaoServiceServer) mustEmbedUnimplementedLeilaoServiceServer() {}
 func (UnimplementedLeilaoServiceServer) testEmbeddedByValue()                       {}
@@ -102,41 +111,34 @@ func RegisterLeilaoServiceServer(s grpc.ServiceRegistrar, srv LeilaoServiceServe
 	s.RegisterService(&LeilaoService_ServiceDesc, srv)
 }
 
-func _LeilaoService_PublicaLeilaoIniciado_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Leilao)
+func _LeilaoService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LLeilao)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LeilaoServiceServer).PublicaLeilaoIniciado(ctx, in)
+		return srv.(LeilaoServiceServer).Create(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: LeilaoService_PublicaLeilaoIniciado_FullMethodName,
+		FullMethod: LeilaoService_Create_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LeilaoServiceServer).PublicaLeilaoIniciado(ctx, req.(*Leilao))
+		return srv.(LeilaoServiceServer).Create(ctx, req.(*LLeilao))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _LeilaoService_PublicaLeilaoFinalizado_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Leilao)
-	if err := dec(in); err != nil {
-		return nil, err
+func _LeilaoService_List_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(LeilaoServiceServer).PublicaLeilaoFinalizado(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: LeilaoService_PublicaLeilaoFinalizado_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LeilaoServiceServer).PublicaLeilaoFinalizado(ctx, req.(*Leilao))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(LeilaoServiceServer).List(m, &grpc.GenericServerStream[Empty, LLeilao]{ServerStream: stream})
 }
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type LeilaoService_ListServer = grpc.ServerStreamingServer[LLeilao]
 
 // LeilaoService_ServiceDesc is the grpc.ServiceDesc for LeilaoService service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -146,14 +148,16 @@ var LeilaoService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*LeilaoServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "PublicaLeilaoIniciado",
-			Handler:    _LeilaoService_PublicaLeilaoIniciado_Handler,
-		},
-		{
-			MethodName: "PublicaLeilaoFinalizado",
-			Handler:    _LeilaoService_PublicaLeilaoFinalizado_Handler,
+			MethodName: "Create",
+			Handler:    _LeilaoService_Create_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "List",
+			Handler:       _LeilaoService_List_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "leilao.proto",
 }

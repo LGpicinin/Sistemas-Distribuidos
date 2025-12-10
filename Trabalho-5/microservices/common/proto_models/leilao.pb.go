@@ -21,17 +21,53 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type Empty struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Empty) Reset() {
+	*x = Empty{}
+	mi := &file_leilao_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Empty) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Empty) ProtoMessage() {}
+
+func (x *Empty) ProtoReflect() protoreflect.Message {
+	mi := &file_leilao_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Empty.ProtoReflect.Descriptor instead.
+func (*Empty) Descriptor() ([]byte, []int) {
+	return file_leilao_proto_rawDescGZIP(), []int{0}
+}
+
 type LStatus struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Status        *string                `protobuf:"bytes,1,req,name=status" json:"status,omitempty"`
-	Leilao        *Leilao                `protobuf:"bytes,2,req,name=leilao" json:"leilao,omitempty"`
+	Leilao        *LLeilao               `protobuf:"bytes,2,req,name=leilao" json:"leilao,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LStatus) Reset() {
 	*x = LStatus{}
-	mi := &file_leilao_proto_msgTypes[0]
+	mi := &file_leilao_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -43,7 +79,7 @@ func (x *LStatus) String() string {
 func (*LStatus) ProtoMessage() {}
 
 func (x *LStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_leilao_proto_msgTypes[0]
+	mi := &file_leilao_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -56,7 +92,7 @@ func (x *LStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LStatus.ProtoReflect.Descriptor instead.
 func (*LStatus) Descriptor() ([]byte, []int) {
-	return file_leilao_proto_rawDescGZIP(), []int{0}
+	return file_leilao_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *LStatus) GetStatus() string {
@@ -66,14 +102,14 @@ func (x *LStatus) GetStatus() string {
 	return ""
 }
 
-func (x *LStatus) GetLeilao() *Leilao {
+func (x *LStatus) GetLeilao() *LLeilao {
 	if x != nil {
 		return x.Leilao
 	}
 	return nil
 }
 
-type Leilao struct {
+type LLeilao struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ID            *string                `protobuf:"bytes,1,req,name=ID" json:"ID,omitempty"`
 	Description   *string                `protobuf:"bytes,2,req,name=Description" json:"Description,omitempty"`
@@ -83,21 +119,21 @@ type Leilao struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Leilao) Reset() {
-	*x = Leilao{}
-	mi := &file_leilao_proto_msgTypes[1]
+func (x *LLeilao) Reset() {
+	*x = LLeilao{}
+	mi := &file_leilao_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Leilao) String() string {
+func (x *LLeilao) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Leilao) ProtoMessage() {}
+func (*LLeilao) ProtoMessage() {}
 
-func (x *Leilao) ProtoReflect() protoreflect.Message {
-	mi := &file_leilao_proto_msgTypes[1]
+func (x *LLeilao) ProtoReflect() protoreflect.Message {
+	mi := &file_leilao_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -108,33 +144,33 @@ func (x *Leilao) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Leilao.ProtoReflect.Descriptor instead.
-func (*Leilao) Descriptor() ([]byte, []int) {
-	return file_leilao_proto_rawDescGZIP(), []int{1}
+// Deprecated: Use LLeilao.ProtoReflect.Descriptor instead.
+func (*LLeilao) Descriptor() ([]byte, []int) {
+	return file_leilao_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *Leilao) GetID() string {
+func (x *LLeilao) GetID() string {
 	if x != nil && x.ID != nil {
 		return *x.ID
 	}
 	return ""
 }
 
-func (x *Leilao) GetDescription() string {
+func (x *LLeilao) GetDescription() string {
 	if x != nil && x.Description != nil {
 		return *x.Description
 	}
 	return ""
 }
 
-func (x *Leilao) GetStartDate() string {
+func (x *LLeilao) GetStartDate() string {
 	if x != nil && x.StartDate != nil {
 		return *x.StartDate
 	}
 	return ""
 }
 
-func (x *Leilao) GetEndDate() string {
+func (x *LLeilao) GetEndDate() string {
 	if x != nil && x.EndDate != nil {
 		return *x.EndDate
 	}
@@ -145,18 +181,19 @@ var File_leilao_proto protoreflect.FileDescriptor
 
 const file_leilao_proto_rawDesc = "" +
 	"\n" +
-	"\fleilao.proto\"B\n" +
+	"\fleilao.proto\"\a\n" +
+	"\x05Empty\"C\n" +
 	"\aLStatus\x12\x16\n" +
-	"\x06status\x18\x01 \x02(\tR\x06status\x12\x1f\n" +
-	"\x06leilao\x18\x02 \x02(\v2\a.LeilaoR\x06leilao\"r\n" +
-	"\x06Leilao\x12\x0e\n" +
+	"\x06status\x18\x01 \x02(\tR\x06status\x12 \n" +
+	"\x06leilao\x18\x02 \x02(\v2\b.LLeilaoR\x06leilao\"s\n" +
+	"\aLLeilao\x12\x0e\n" +
 	"\x02ID\x18\x01 \x02(\tR\x02ID\x12 \n" +
 	"\vDescription\x18\x02 \x02(\tR\vDescription\x12\x1c\n" +
 	"\tStartDate\x18\x03 \x02(\tR\tStartDate\x12\x18\n" +
-	"\aEndDate\x18\x04 \x02(\tR\aEndDate2i\n" +
-	"\rLeilaoService\x12*\n" +
-	"\x15PublicaLeilaoIniciado\x12\a.Leilao\x1a\b.LStatus\x12,\n" +
-	"\x17PublicaLeilaoFinalizado\x12\a.Leilao\x1a\b.LStatusB\x0fZ\rproto_models/"
+	"\aEndDate\x18\x04 \x02(\tR\aEndDate2I\n" +
+	"\rLeilaoService\x12\x1c\n" +
+	"\x06Create\x12\b.LLeilao\x1a\b.LStatus\x12\x1a\n" +
+	"\x04List\x12\x06.Empty\x1a\b.LLeilao0\x01B\x0fZ\rproto_models/"
 
 var (
 	file_leilao_proto_rawDescOnce sync.Once
@@ -170,17 +207,18 @@ func file_leilao_proto_rawDescGZIP() []byte {
 	return file_leilao_proto_rawDescData
 }
 
-var file_leilao_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_leilao_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_leilao_proto_goTypes = []any{
-	(*LStatus)(nil), // 0: LStatus
-	(*Leilao)(nil),  // 1: Leilao
+	(*Empty)(nil),   // 0: Empty
+	(*LStatus)(nil), // 1: LStatus
+	(*LLeilao)(nil), // 2: LLeilao
 }
 var file_leilao_proto_depIdxs = []int32{
-	1, // 0: LStatus.leilao:type_name -> Leilao
-	1, // 1: LeilaoService.PublicaLeilaoIniciado:input_type -> Leilao
-	1, // 2: LeilaoService.PublicaLeilaoFinalizado:input_type -> Leilao
-	0, // 3: LeilaoService.PublicaLeilaoIniciado:output_type -> LStatus
-	0, // 4: LeilaoService.PublicaLeilaoFinalizado:output_type -> LStatus
+	2, // 0: LStatus.leilao:type_name -> LLeilao
+	2, // 1: LeilaoService.Create:input_type -> LLeilao
+	0, // 2: LeilaoService.List:input_type -> Empty
+	1, // 3: LeilaoService.Create:output_type -> LStatus
+	2, // 4: LeilaoService.List:output_type -> LLeilao
 	3, // [3:5] is the sub-list for method output_type
 	1, // [1:3] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -199,7 +237,7 @@ func file_leilao_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_leilao_proto_rawDesc), len(file_leilao_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

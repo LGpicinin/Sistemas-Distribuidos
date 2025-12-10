@@ -87,13 +87,13 @@ func handleLeilaoIniciado(leilao models.Leilao) string {
 }
 
 // função que escuta fila de leilões iniciados
-func (s *server) PublicaLeilaoIniciado(ctx context.Context, in *pb.Leilao) (*pb.LStatus, error) {
-	startDate, _ := time.Parse(time.RFC1123Z, in.GetStartDate())
-	endDate, _ := time.Parse(time.RFC1123Z, in.GetEndDate())
+func (s *server) PublicaLeilaoIniciado(ctx context.Context, in *pb.Leilao) (*pb.Status, error) {
+	startDate, _ := time.Parse("2006-01-02T15:04:05.999Z", in.GetStartDate())
+	endDate, _ := time.Parse("2006-01-02T15:04:05.999Z", in.GetEndDate())
 	leilao := models.CreateLeilao(in.GetID(), in.GetDescription(), startDate, endDate)
 
 	response := handleLeilaoIniciado(leilao)
-	return &pb.LStatus{Status: &response, Leilao: in}, nil
+	return &pb.Status{Status: &response, Leilao: in}, nil
 }
 
 // função que remove leilão e publica lance vencedor na fila
@@ -127,14 +127,14 @@ func handleLeilaoFinalizado(leilao models.Leilao) string {
 	return response
 }
 
-// função que escuta fila de leilões finalisados
-func (s *server) PublicaLeilaoFinalizado(ctx context.Context, in *pb.Leilao) (*pb.LStatus, error) {
-	startDate, _ := time.Parse(time.RFC1123Z, in.GetStartDate())
-	endDate, _ := time.Parse(time.RFC1123Z, in.GetEndDate())
+// função que escuta fila de leilões finalizados
+func (s *server) PublicaLeilaoFinalizado(ctx context.Context, in *pb.Leilao) (*pb.Status, error) {
+	startDate, _ := time.Parse("2006-01-02T15:04:05.999Z", in.GetStartDate())
+	endDate, _ := time.Parse("2006-01-02T15:04:05.999Z", in.GetEndDate())
 	leilao := models.CreateLeilao(in.GetID(), in.GetDescription(), startDate, endDate)
 
 	response := handleLeilaoFinalizado(leilao)
-	return &pb.LStatus{Status: &response, Leilao: in}, nil
+	return &pb.Status{Status: &response, Leilao: in}, nil
 }
 
 func main() {
