@@ -13,6 +13,7 @@ import (
 	"net/http"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var gatewayClient pb.GatewayServiceClient
@@ -37,7 +38,7 @@ func handleLanceCandidate(lanceCandidate models.Lance) string {
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
-		response, err := gatewayClient.PublicaLanceInvalido(ctx, &pb.GLance{
+		_, err := gatewayClient.PublicaLanceInvalido(ctx, &pb.GLance{
 			LeilaoID: &lanceCandidate.LeilaoID,
 			UserID:   &lanceCandidate.UserID,
 			Value:    &lanceCandidate.Value,
@@ -46,7 +47,7 @@ func handleLanceCandidate(lanceCandidate models.Lance) string {
 			log.Printf("[MS-LANCE] Erro ao publicar lance inválido: %v\n", err)
 		}
 
-		return response.GetStatus()
+		return http.StatusText(http.StatusCreated)
 	}
 
 	activeLeilao.LastValidLance = lanceCandidate
@@ -55,7 +56,7 @@ func handleLanceCandidate(lanceCandidate models.Lance) string {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	response, err := gatewayClient.PublicaLanceValido(ctx, &pb.GLance{
+	_, err := gatewayClient.PublicaLanceValido(ctx, &pb.GLance{
 		LeilaoID: &lanceCandidate.LeilaoID,
 		UserID:   &lanceCandidate.UserID,
 		Value:    &lanceCandidate.Value,
@@ -65,7 +66,7 @@ func handleLanceCandidate(lanceCandidate models.Lance) string {
 	}
 
 	log.Printf("[MS-LANCE] Novo lance validado: \n%s\n", lanceCandidate.Print())
-	return response.GetStatus()
+	return http.StatusText(http.StatusCreated)
 }
 
 func (s *server) Create(ctx context.Context, in *pb.Lance) (*pb.Status, error) {
@@ -114,7 +115,7 @@ func handleLeilaoFinalizado(leilao models.Leilao) string {
 			})
 			response = response_.GetStatus()
 			if err != nil {
-				log.Printf("[MS-LANCE] Erro ao publicar lance válido: %v\n", err)
+				log.Printf("[MS-LANCE] Erro ao publicar lance vencedor: %v\n", err)
 			}
 
 			log.Printf("[MS-LANCE] NOVO VENCEDOR: \n%s\n", lastLance.Print())
@@ -145,7 +146,7 @@ func main() {
 	pb.RegisterLanceServiceServer(s, &server{})
 	fmt.Println("Server running on http://localhost:8080")
 
-	gatewayConn, err := grpc.NewClient("localhost:5060")
+	gatewayConn, err := grpc.NewClient("localhost:5060", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	utils.FailOnError(err, "Erro ao conectar ao gateway")
 	defer gatewayConn.Close()
 

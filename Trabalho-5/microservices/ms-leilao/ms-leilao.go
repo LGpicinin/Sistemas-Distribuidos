@@ -15,8 +15,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/rabbitmq/amqp091-go"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var activeLeiloes map[string]models.Leilao = make(map[string]models.Leilao)
@@ -60,7 +60,7 @@ func insertionSortOnList(leilaoList *list.List, value models.Leilao, fieldToComp
 }
 
 // função infinita que publica leilão na fila quando ele for iniciado
-func publishWhenStarts(ch *amqp091.Channel, q amqp091.Queue) {
+func publishWhenStarts() {
 	for {
 		if leiloesSortedByStart.Len() == 0 {
 			continue
@@ -90,12 +90,12 @@ func publishWhenStarts(ch *amqp091.Channel, q amqp091.Queue) {
 		activeLeiloes[firstLeilao.ID] = firstLeilao
 		leiloesSortedByStart.Remove(first)
 
-		log.Printf("[MS-LEILAO] NOVO LEILÃO INICIADO: %s PUBLICADO NA FILA %s\n\n", firstLeilao.Print(), q.Name)
+		log.Printf("[MS-LEILAO] NOVO LEILÃO INICIADO: %s\n\n", firstLeilao.Print())
 	}
 }
 
 // função infinita que publica leilão na fila quando ele for finalizado
-func publishWhenFinishes(ch *amqp091.Channel, q amqp091.Queue) {
+func publishWhenFinishes() {
 	for {
 		if leiloesSortedByEnd.Len() == 0 {
 			continue
@@ -125,7 +125,7 @@ func publishWhenFinishes(ch *amqp091.Channel, q amqp091.Queue) {
 		leiloesSortedByEnd.Remove(first)
 		delete(activeLeiloes, firstLeilao.ID)
 
-		log.Printf("[MS-LEILAO] NOVO LEILÃO FINALIZADO %s PUBLICADO NA FILA %s\n\n", firstLeilao.Print(), q.Name)
+		log.Printf("[MS-LEILAO] NOVO LEILÃO FINALIZADO %s\n\n", firstLeilao.Print())
 	}
 }
 
@@ -171,11 +171,14 @@ func main() {
 	pb.RegisterLeilaoServiceServer(s, &server{})
 	fmt.Println("Server running on http://localhost:8090")
 
-	lanceConn, err := grpc.NewClient("localhost:8080")
+	lanceConn, err := grpc.NewClient("localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	utils.FailOnError(err, "Erro ao conectar ao lance")
 	defer lanceConn.Close()
 
 	lanceClient = pb.NewLanceServiceClient(lanceConn)
+
+	go publishWhenStarts()
+	go publishWhenFinishes()
 
 	if err = s.Serve(lis); err != nil {
 		utils.FailOnError(err, "Erro ao servir")
