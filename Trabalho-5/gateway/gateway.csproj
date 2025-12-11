@@ -7,8 +7,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.33.2" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.71.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.76.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.10" />
     <PackageReference Include="RabbitMQ.Client" Version="7.2.0" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Protos\gateway.proto" />
+    <Protobuf Include="Protos\lance.proto" />
+    <Protobuf Include="Protos\leilao.proto" />
+    <Protobuf Include="Protos\pagamento.proto" />
+  </ItemGroup>
+
 
 </Project>

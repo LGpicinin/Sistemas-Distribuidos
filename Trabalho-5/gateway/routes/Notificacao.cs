@@ -3,6 +3,7 @@ using System.Text.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
+using Classes;
 
 
 namespace Routes
@@ -28,45 +29,6 @@ namespace Routes
 
         private IChannel channel = null;
 
-        public class LanceData
-        {
-            public string leilao_id { get; set; }
-            public string user_id { get; set; }
-            public float value { get; set; }
-        }
-
-        public class StatusData
-        {
-            public string clientId { get; set; }
-            public string paymentId { get; set; }
-            public float value { get; set; }
-
-            public bool status { get; set; }
-        }
-
-        public class StatusDataType
-        {
-            public string type { get; set; }
-            public StatusData statusData { get; set; }
-        }
-
-        public class LinkData
-        {
-            public string clientId { get; set; }
-            public string link { get; set; }
-        }
-
-        public class LinkDataType
-        {
-            public string type { get; set; }
-            public LinkData linkData { get; set; }
-        }
-
-        public class LanceDataType
-        {
-            public string type { get; set; }
-            public LanceData lance { get; set; }
-        }
 
         public class InterestList
         {

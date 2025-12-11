@@ -1,0 +1,27 @@
+package lance;
+option csharp_namespace = "GrpcLance";
+
+service LanceService {
+    rpc Create (LLance) returns (Status);
+    rpc PublicaLeilaoIniciado (Leilao) returns (Status);
+    rpc PublicaLeilaoFinalizado (Leilao) returns (Status);
+}
+
+message Status {
+    required string status = 1;
+    optional LLance lance = 2;
+    optional Leilao leilao = 3;
+}
+
+message LLance {
+    required string LeilaoID = 1;
+    required string UserID = 2;
+    required float Value = 3;
+}
+
+message Leilao {
+    required string ID = 1;
+    required string Description = 2;
+    required string StartDate = 3;
+    required string EndDate = 4;
+}

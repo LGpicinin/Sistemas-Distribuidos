@@ -1,6 +1,13 @@
 using Routes;
+using GrpcGateway.Services;
+using GrpcGateway;
+using GrpcLeilao;
+using GrpcLance;
+using GrpcPagamento;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddGrpc();
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -28,17 +35,21 @@ if (app.Environment.IsDevelopment())
 // Enable CORS
 app.UseCors("AllowAll");
 
+
 Notificacao notificacaoRouter = new Notificacao();
 Lance lanceRouter = new Lance();
-Leilao leilaoRouter = new Leilao(notificacaoRouter);
+Routes.Leilao leilaoRouter = new Routes.Leilao(notificacaoRouter);
 
 lanceRouter.SetupRoutes(app);
 leilaoRouter.SetupRoutes(app);
 notificacaoRouter.SetupRoutes(app);
 
-GatewayService gatewayService = new GatewayService(notificacaoRouter, leilaoRouter, lanceRouter);
+app.MapGrpcService<LanceService>();
+app.MapGrpcService<LeilaoService>();
+app.MapGrpcService<GatewayService>(notificacaoRouter);
 
-// await notificacaoRouter.ConnectCreateChannel();
+await lanceRouter.ConnectCreateChannel();
+await leilaoRouter.ConnectCreateChannel();
 // await notificacaoRouter.ConsumeLanceEvents();
 // await notificacaoRouter.ConsumeStatusEvents();
 // await notificacaoRouter.ConsumeLinkEvents();

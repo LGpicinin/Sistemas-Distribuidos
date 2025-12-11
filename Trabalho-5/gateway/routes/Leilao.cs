@@ -1,6 +1,8 @@
 using System.Text.Json;
 using Grpc.Net.Client;
-using GrpcLeilaoServiceClient;
+using GrpcLeilao;
+using Classes;
+
 
 
 namespace Routes
@@ -21,38 +23,10 @@ namespace Routes
         public async Task ConnectCreateChannel()
         {
             var channel = GrpcChannel.ForAddress("https://localhost:8090");
-            var ms_leilao = new LeilaoService.LeilaoServiceClient(channel);
+            ms_leilao = new LeilaoService.LeilaoServiceClient(channel);
         }
 
-        public class LeilaoData
-        {
-            public string id { get; set; }
-            public string description { get; set; }
-            public DateTime start_date { get; set; }
-            public DateTime end_date { get; set; }
-
-            public LeilaoData(
-                string id, string description, DateTime start_date, DateTime end_date
-            )
-            {
-                this.id = id;
-                this.description = description;
-                this.start_date = start_date;
-                this.end_date = end_date;
-            }
-        }
-
-        public class LeilaoDataPlus
-        {
-            public LeilaoData leilao { get; set; }
-            public bool notificar { get; set; }
-
-            public LeilaoDataPlus(LeilaoData leilao, bool notificar)
-            {
-                this.leilao = leilao;
-                this.notificar = notificar;
-            }
-        }
+        
 
         public void SetupRoutes(WebApplication app)
         {
@@ -71,8 +45,8 @@ namespace Routes
             {
                 ID = leilao.id,
                 Description = leilao.description,
-                StartDate = leilao.start_date,
-                EndDate = leilao.end_date
+                StartDate = leilao.start_date.ToString(),
+                EndDate = leilao.end_date.ToString()
             };
 
             using var response = await ms_leilao.Create(pbLeilao);
@@ -82,32 +56,38 @@ namespace Routes
             httpContext.Response.StatusCode = (int)response.Status;
             if (response.StatusCode.ToString() == "Created")
             {
-                var leilao = JsonSerializer.Deserialize<LeilaoData>(body);
-                notificacao.AddLeilao(leilao!.id);
+                var leilaoData = JsonSerializer.Deserialize<LeilaoData>(body);
+                notificacao.AddLeilao(leilaoData!.id);
             }
-            httpContext.Response.ContentType = response.Content.Headers.ContentType?.ToString() ?? "application/json";
+            httpContext.Response.ContentType = "application/json";
             // var respBody = await response.Content.ReadAsStringAsync();
-            await httpContext.Response.WriteAsync("");
+            await httpContext.Response.WriteAsync(await content.ReadAsStringAsync());
         }
 
         public async Task ListLeiloes(HttpContext httpContext)
         {
-            using var activeLeiloesResponse = await httpClient.GetAsync($"{MSLeilaoAddress}/list");
+            using var activeLeiloesResponse = await ms_leilao.List(null);
             var userId = httpContext.Request.Query["userId"];
-
-            string responseBody = await activeLeiloesResponse.Content.ReadAsStringAsync();
-            var leiloes = JsonSerializer.Deserialize<List<LeilaoData>>(responseBody);
+            
+            // string responseBody = await activeLeiloesResponse.Content.ReadAsStringAsync();
+            // var leiloes = JsonSerializer.Deserialize<List<LeilaoData>>(responseBody);
             List<LeilaoDataPlus> leiloesPlus = new List<LeilaoDataPlus>();
 
-            for (int i = 0; i < leiloes?.Count; i++)
+            for (int i = 0; i < activeLeiloesResponse?.Count; i++)
             {
-                var leilaoPlus = new LeilaoDataPlus(leiloes[i], false);
+                var leilaoData = new LeilaoData(
+                    activeLeiloesResponse[i].ID,
+                    activeLeiloesResponse[i].Description,
+                    activeLeiloesResponse[i].StartDate,
+                    activeLeiloesResponse[i].EndDate
+                );
+                var leilaoPlus = new LeilaoDataPlus(leilaoData, false);
 
-                if (!notificacao.InterestLists.ContainsKey(leiloes[i].id))
+                if (!notificacao.InterestLists.ContainsKey(leilaoData.id))
                 {
-                    notificacao.InterestLists.Add(leiloes[i].id, new Notificacao.InterestList());
+                    notificacao.InterestLists.Add(leilaoData.id, new Notificacao.InterestList());
                 }
-                var clients = notificacao.InterestLists[leiloes[i].id].ClientIds;
+                var clients = notificacao.InterestLists[leilaoData.id].ClientIds;
                 if (clients.ContainsKey(userId!))
                 {
                     leilaoPlus.notificar = true;
