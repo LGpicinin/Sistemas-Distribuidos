@@ -20,7 +20,13 @@ namespace Routes
 
         public async Task ConnectCreateChannel()
         {
-            var channel = GrpcChannel.ForAddress("https://localhost:8080");
+            // var options = new GrpcChannelOptions();
+            // options.Credentials = Grpc.Core.ChannelCredentials.Insecure;
+            // var channel = GrpcChannel.ForAddress("http://localhost:8080", options);
+            var channel = GrpcChannel.ForAddress("localhost:8090",  new GrpcChannelOptions
+            {
+                Credentials = ChannelCredentials.Insecure
+            });
             ms_lance = new LanceService.LanceServiceClient(channel);
         }
 
@@ -38,9 +44,9 @@ namespace Routes
                 Value = lanceData.value
             };
 
-            using var response = await ms_lance.Create(pbLance);
+            var response = ms_lance.Create(pbLance);
 
-            httpContext.Response.StatusCode = (int)response.Status;
+            httpContext.Response.StatusCode = Int32.Parse(response.Status_);
             httpContext.Response.ContentType = "application/json";
             // var respBody = await response.Content.ReadAsStringAsync();
             await httpContext.Response.WriteAsync(await content.ReadAsStringAsync());

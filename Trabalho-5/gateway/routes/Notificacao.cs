@@ -10,13 +10,6 @@ namespace Routes
 {
     class Notificacao
     {
-        private string EXCHANGE_NAME = "LEILAO";
-        private string QUEUE_LANCE_VALIDADO = "lance_validado";
-        private string QUEUE_LANCE_INVALIDADO = "lance_invalidado";
-        private string QUEUE_LEILAO_VENCEDOR = "leilao_vencedor";
-        private string QUEUE_LINK_PAGAMENTO = "link_pagamento";
-
-        private string QUEUE_STATUS_PAGAMENTO = "status_pagamento";
 
         private static readonly HttpClient httpClient = new HttpClient();
         // private static string MSNotificacaoAddress = "http://localhost:8090";
@@ -26,8 +19,6 @@ namespace Routes
         private ConnectionFactory factory = new ConnectionFactory();
 
         private IConnection conn = null;
-
-        private IChannel channel = null;
 
 
         public class InterestList

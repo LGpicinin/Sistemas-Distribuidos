@@ -22,7 +22,7 @@ message GLance {
 
 message Link {
     required string UserID = 1;
-    required string link = 2;
+    required string Link = 2;
 }
 
 message StatusPayment {

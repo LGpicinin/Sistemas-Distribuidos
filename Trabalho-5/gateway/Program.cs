@@ -1,5 +1,4 @@
 using Routes;
-using GrpcGateway.Services;
 using GrpcGateway;
 using GrpcLeilao;
 using GrpcLance;
@@ -44,9 +43,9 @@ lanceRouter.SetupRoutes(app);
 leilaoRouter.SetupRoutes(app);
 notificacaoRouter.SetupRoutes(app);
 
-app.MapGrpcService<LanceService>();
-app.MapGrpcService<LeilaoService>();
-app.MapGrpcService<GatewayService>(notificacaoRouter);
+// app.MapGrpcService<LanceService>();
+// app.MapGrpcService<LeilaoService>();
+app.MapGrpcService<GrpcGateway.Services.Gateway>();
 
 await lanceRouter.ConnectCreateChannel();
 await leilaoRouter.ConnectCreateChannel();

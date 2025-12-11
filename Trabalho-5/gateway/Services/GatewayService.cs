@@ -104,7 +104,7 @@ class Gateway : GatewayService.GatewayServiceBase
             var linkPlus = new LinkDataType();
 
             linkData.clientId = request.UserID;
-            linkData.link = request.Link;
+            linkData.link = request.Link_;
 
             linkPlus.linkData = linkData;
             linkPlus.type = "link_pagamento";
