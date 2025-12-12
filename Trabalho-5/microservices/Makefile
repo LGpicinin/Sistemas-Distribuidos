@@ -27,5 +27,7 @@ ms-pagamento: ./ms-pagamento/ms-pagamento.go
 	go mod tidy; \
 	go build -o ../bin/ms-pagamento ./ms-pagamento.go
 
-
-
+kill-all:
+	pkill ms-pagamento; \
+	pkill ms-leilao; \
+	pkill ms-lance; \
