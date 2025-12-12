@@ -8,137 +8,137 @@ namespace GrpcGateway.Services;
 
 class Gateway : GatewayService.GatewayServiceBase
 {
-        // required string LeilaoID = 1;
-        // required string UserID = 2;
-        // required float Value = 3;
-        private Notificacao notificacao;
+    // required string LeilaoID = 1;
+    // required string UserID = 2;
+    // required float Value = 3;
+    private Notificacao notificacao;
 
-        public Gateway(Notificacao not)
+    public Gateway(Notificacao not)
+    {
+        notificacao = not;
+    }
+
+
+    public override Task<GStatus> PublicaLanceInvalido(GLance request,
+        ServerCallContext context)
+    {
+        // logger.LogInformation("Saying hello to {Name}", request.Name);
+
+
+        var lanceData = new LanceData();
+        var lancePlus = new LanceDataType();
+
+        lanceData.leilao_id = request.LeilaoID;
+        lanceData.user_id = request.UserID;
+        lanceData.value = request.Value;
+
+        lancePlus.lance = lanceData;
+        lancePlus.type = "lance_invalidado";
+
+        notificacao.ConsumeLanceEvents(lancePlus);
+
+
+        return Task.FromResult(new GStatus
         {
-            notificacao = not;
-        }
+            Status = "FELICIDADE!!!!!"
+        });
+    }
+
+    public override async Task<GStatus> PublicaLanceValido(GLance request,
+        ServerCallContext context)
+    {
+        // logger.LogInformation("Saying hello to {Name}", request.Name);
 
 
-        public override Task<GStatus> PublicaLanceInvalido(GLance request,
-            ServerCallContext context)
+        var lanceData = new LanceData();
+        var lancePlus = new LanceDataType();
+
+        lanceData.leilao_id = request.LeilaoID;
+        lanceData.user_id = request.UserID;
+        lanceData.value = request.Value;
+
+        lancePlus.lance = lanceData;
+        lancePlus.type = "lance_validado";
+
+        await notificacao.ConsumeLanceEvents(lancePlus);
+
+
+        return await Task.FromResult(new GStatus
         {
-            // logger.LogInformation("Saying hello to {Name}", request.Name);
-        
+            Status = "FELICIDADE!!!!!"
+        });
+    }
 
-            var lanceData = new LanceData();
-            var lancePlus = new LanceDataType();
+    public override async Task<GStatus> PublicaLeilaoVencedor(GLance request,
+        ServerCallContext context)
+    {
+        // logger.LogInformation("Saying hello to {Name}", request.Name);
 
-            lanceData.leilao_id = request.LeilaoID;
-            lanceData.user_id = request.UserID;
-            lanceData.value = request.Value;
 
-            lancePlus.lance = lanceData;
-            lancePlus.type = "lance_invalidado";
-            
-            notificacao.ConsumeLanceEvents(lancePlus);
-    
+        var lanceData = new LanceData();
+        var lancePlus = new LanceDataType();
 
-            return Task.FromResult(new GStatus 
-            {
-                Status = "FELICIDADE!!!!!"
-            });
-        }
+        lanceData.leilao_id = request.LeilaoID;
+        lanceData.user_id = request.UserID;
+        lanceData.value = request.Value;
 
-        public override Task<GStatus> PublicaLanceValido(GLance request,
-            ServerCallContext context)
+        lancePlus.lance = lanceData;
+        lancePlus.type = "leilao_vencedor";
+
+        await notificacao.ConsumeLanceEvents(lancePlus);
+
+
+        return await Task.FromResult(new GStatus
         {
-            // logger.LogInformation("Saying hello to {Name}", request.Name);
-        
+            Status = "FELICIDADE!!!!!"
+        });
+    }
 
-            var lanceData = new LanceData();
-            var lancePlus = new LanceDataType();
+    public override async Task<GStatus> PublicaLinkPagamento(Link request,
+        ServerCallContext context)
+    {
+        // logger.LogInformation("Saying hello to {Name}", request.Name);
 
-            lanceData.leilao_id = request.LeilaoID;
-            lanceData.user_id = request.UserID;
-            lanceData.value = request.Value;
 
-            lancePlus.lance = lanceData;
-            lancePlus.type = "lance_validado";
-            
-            notificacao.ConsumeLanceEvents(lancePlus);
-    
+        var linkData = new LinkData();
+        var linkPlus = new LinkDataType();
 
-            return Task.FromResult(new GStatus 
-            {
-                Status = "FELICIDADE!!!!!"
-            });
-        }
+        linkData.clientId = request.UserID;
+        linkData.link = request.Link_;
 
-        public override Task<GStatus> PublicaLeilaoVencedor(GLance request,
-            ServerCallContext context)
+        linkPlus.linkData = linkData;
+        linkPlus.type = "link_pagamento";
+
+        await notificacao.ConsumeLinkEvents(linkPlus);
+
+
+        return await Task.FromResult(new GStatus
         {
-            // logger.LogInformation("Saying hello to {Name}", request.Name);
-        
+            Status = "FELICIDADE!!!!!"
+        });
+    }
 
-            var lanceData = new LanceData();
-            var lancePlus = new LanceDataType();
+    public override async Task<GStatus> PublicaStatusPagamento(StatusPayment request,
+        ServerCallContext context)
+    {
 
-            lanceData.leilao_id = request.LeilaoID;
-            lanceData.user_id = request.UserID;
-            lanceData.value = request.Value;
+        var statusData = new StatusData();
+        var statusPlus = new StatusDataType();
 
-            lancePlus.lance = lanceData;
-            lancePlus.type = "leilao_vencedor";
-            
-            notificacao.ConsumeLanceEvents(lancePlus);
-    
+        statusData.clientId = request.UserID;
+        statusData.paymentId = request.PaymentId;
+        statusData.value = request.Value;
+        statusData.status = request.Status;
 
-            return Task.FromResult(new GStatus 
-            {
-                Status = "FELICIDADE!!!!!"
-            });
-        }
+        statusPlus.statusData = statusData;
+        statusPlus.type = "status_pagamento";
 
-        public override Task<GStatus> PublicaLinkPagamento(Link request,
-            ServerCallContext context)
+        await notificacao.ConsumeStatusEvents(statusPlus);
+
+
+        return await Task.FromResult(new GStatus
         {
-            // logger.LogInformation("Saying hello to {Name}", request.Name);
-        
-
-            var linkData = new LinkData();
-            var linkPlus = new LinkDataType();
-
-            linkData.clientId = request.UserID;
-            linkData.link = request.Link_;
-
-            linkPlus.linkData = linkData;
-            linkPlus.type = "link_pagamento";
-            
-            notificacao.ConsumeLinkEvents(linkPlus);
-    
-
-            return Task.FromResult(new GStatus 
-            {
-                Status = "FELICIDADE!!!!!"
-            });
-        }
-
-        public override Task<GStatus> PublicaStatusPagamento(StatusPayment request,
-            ServerCallContext context)
-        {
-
-            var statusData = new StatusData();
-            var statusPlus = new StatusDataType();
-
-            statusData.clientId = request.UserID;
-            statusData.paymentId = request.PaymentId;
-            statusData.value = request.Value;
-            statusData.status = request.Status;
-
-            statusPlus.statusData = statusData;
-            statusPlus.type = "status_pagamento";
-            
-            notificacao.ConsumeStatusEvents(statusPlus);
-    
-
-            return Task.FromResult(new GStatus 
-            {
-                Status = "FELICIDADE!!!!!"
-            });
-        }
+            Status = "FELICIDADE!!!!!"
+        });
+    }
 }

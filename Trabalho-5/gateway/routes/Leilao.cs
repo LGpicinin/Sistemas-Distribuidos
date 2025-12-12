@@ -6,6 +6,7 @@ using System.Threading.Channels;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Grpc.Core;
 
 
 
@@ -38,7 +39,7 @@ namespace Routes
             ms_leilao = new LeilaoService.LeilaoServiceClient(channel);
         }
 
-        
+
 
         public void SetupRoutes(WebApplication app)
         {
@@ -57,8 +58,8 @@ namespace Routes
             {
                 ID = leilao.id,
                 Description = leilao.description,
-                StartDate = leilao.start_date.ToString(),
-                EndDate = leilao.end_date.ToString()
+                StartDate = leilao.start_date.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
+                EndDate = leilao.end_date.ToString("o", System.Globalization.CultureInfo.InvariantCulture)
             };
 
             var response = ms_leilao.Create(pbLeilao);
@@ -68,7 +69,8 @@ namespace Routes
             if (response.Status == "Created")
             {
                 num_status = 201;
-            } else
+            }
+            else
             {
                 num_status = 400;
             }
@@ -86,18 +88,20 @@ namespace Routes
 
         public async Task ListLeiloes(HttpContext httpContext)
         {
-            CancellationTokenSource source = new CancellationTokenSource();
+            CancellationTokenSource source = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             CancellationToken token = source.Token;
             var userId = httpContext.Request.Query["userId"];
             // string responseBody = await activeLeiloesResponse.Content.ReadAsStringAsync();
             // var leiloes = JsonSerializer.Deserialize<List<LeilaoData>>(responseBody);
             List<LeilaoDataPlus> leiloesPlus = new List<LeilaoDataPlus>();
 
-            var activeLeiloesResponse = ms_leilao.List(null);
-            while (await activeLeiloesResponse.ResponseStream.MoveNext(token))
+            var activeLeiloesResponse = ms_leilao.List(new GrpcLeilao.Empty(), null, null, token);
+            await foreach (
+                var current in activeLeiloesResponse.ResponseStream.ReadAllAsync(token)
+            )
+            // while (await activeLeiloesResponse.ResponseStream.MoveNext(token))
             // await foreach (var current in call.ResponseStream.ReadAllAsync())
             {
-                var current = activeLeiloesResponse.ResponseStream.Current;
                 var leilaoData = new LeilaoData(
                     current.ID,
                     current.Description,
