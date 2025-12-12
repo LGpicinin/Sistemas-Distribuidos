@@ -117,7 +117,7 @@ func main() {
 	pb.RegisterPagamentoServiceServer(s, &server{})
 	fmt.Println("GRPC Server running on localhost:8101")
 
-	gatewayConn, err := grpc.NewClient("localhost:5060", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	gatewayConn, err := grpc.NewClient("localhost:5059", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	utils.FailOnError(err, "Erro ao conectar ao gateway")
 	defer gatewayConn.Close()
 
