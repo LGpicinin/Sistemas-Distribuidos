@@ -2,6 +2,9 @@ using Grpc.Net.Client;
 using GrpcLance;
 using System.Text.Json;
 using Classes;
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace Routes
 {
@@ -20,13 +23,15 @@ namespace Routes
 
         public async Task ConnectCreateChannel()
         {
+            AppContext.SetSwitch(
+                "System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
             // var options = new GrpcChannelOptions();
             // options.Credentials = Grpc.Core.ChannelCredentials.Insecure;
-            // var channel = GrpcChannel.ForAddress("http://localhost:8080", options);
-            var channel = GrpcChannel.ForAddress("localhost:8090",  new GrpcChannelOptions
-            {
-                Credentials = ChannelCredentials.Insecure
-            });
+            var channel = GrpcChannel.ForAddress("http://localhost:8080");
+            // var channel = GrpcChannel.ForAddress("localhost:8090",  new GrpcChannelOptions
+            // {
+            //     Credentials = ChannelCredentials.Insecure
+            // });
             ms_lance = new LanceService.LanceServiceClient(channel);
         }
 
@@ -46,7 +51,17 @@ namespace Routes
 
             var response = ms_lance.Create(pbLance);
 
-            httpContext.Response.StatusCode = Int32.Parse(response.Status_);
+            var num_status = 0;
+            if (response.Status_ == "Created")
+            {
+                num_status = 201;
+            } else
+            {
+                num_status = 400;
+            }
+
+            httpContext.Response.StatusCode = num_status;
+
             httpContext.Response.ContentType = "application/json";
             // var respBody = await response.Content.ReadAsStringAsync();
             await httpContext.Response.WriteAsync(await content.ReadAsStringAsync());

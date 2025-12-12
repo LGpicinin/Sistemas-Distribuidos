@@ -3,6 +3,9 @@ using Grpc.Net.Client;
 using GrpcLeilao;
 using Classes;
 using System.Threading.Channels;
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 
 
@@ -23,13 +26,15 @@ namespace Routes
 
         public async Task ConnectCreateChannel()
         {
+            AppContext.SetSwitch(
+                "System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
             // var options = new GrpcChannelOptions();
             // options.Credentials = Grpc.Core.ChannelCredentials.Insecure;
-            // var channel = GrpcChannel.ForAddress("http://localhost:8090", options);
-            var channel = GrpcChannel.ForAddress("localhost:8090",  new GrpcChannelOptions
-            {
-                Credentials = ChannelCredentials.Insecure
-            });
+            var channel = GrpcChannel.ForAddress("http://localhost:8090");
+            // var channel = GrpcChannel.ForAddress("localhost:8090",  new GrpcChannelOptions
+            // {
+            //     Credentials = ChannelCredentials.Insecure
+            // });
             ms_leilao = new LeilaoService.LeilaoServiceClient(channel);
         }
 
@@ -59,8 +64,16 @@ namespace Routes
             var response = ms_leilao.Create(pbLeilao);
 
             // using var response = await httpClient.PostAsync($"{MSLeilaoAddress}/create", content);
+            var num_status = 0;
+            if (response.Status == "Created")
+            {
+                num_status = 201;
+            } else
+            {
+                num_status = 400;
+            }
 
-            httpContext.Response.StatusCode = Int32.Parse(response.Status);
+            httpContext.Response.StatusCode = num_status;
             if (response.Status.ToString() == "Created")
             {
                 var leilaoData = JsonSerializer.Deserialize<LeilaoData>(body);
@@ -68,20 +81,21 @@ namespace Routes
             }
             httpContext.Response.ContentType = "application/json";
             // var respBody = await response.Content.ReadAsStringAsync();
-            await httpContext.Response.WriteAsync(await content.ReadAsStringAsync());
+            await httpContext.Response.WriteAsync(body);
         }
 
         public async Task ListLeiloes(HttpContext httpContext)
         {
-            var activeLeiloesResponse = ms_leilao.List(null);
+            CancellationTokenSource source = new CancellationTokenSource();
+            CancellationToken token = source.Token;
             var userId = httpContext.Request.Query["userId"];
-            
             // string responseBody = await activeLeiloesResponse.Content.ReadAsStringAsync();
             // var leiloes = JsonSerializer.Deserialize<List<LeilaoData>>(responseBody);
             List<LeilaoDataPlus> leiloesPlus = new List<LeilaoDataPlus>();
 
-            while (await activeLeiloesResponse.ResponseStream.MoveNext(CancellationToken.None))
-            // for (int i = 0; i < activeLeiloesResponse.Count; i++)
+            var activeLeiloesResponse = ms_leilao.List(null);
+            while (await activeLeiloesResponse.ResponseStream.MoveNext(token))
+            // await foreach (var current in call.ResponseStream.ReadAllAsync())
             {
                 var current = activeLeiloesResponse.ResponseStream.Current;
                 var leilaoData = new LeilaoData(
