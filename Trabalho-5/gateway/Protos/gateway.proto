@@ -1,5 +1,4 @@
 option csharp_namespace = "GrpcGateway";
-package gateway;
 
 service GatewayService {
     rpc PublicaLanceInvalido (GLance) returns (GStatus);

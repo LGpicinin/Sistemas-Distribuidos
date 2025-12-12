@@ -1,5 +1,4 @@
 option csharp_namespace = "GrpcPagamento";
-package pagamento;
 
 service PagamentoService {
     rpc PublicaLanceVencedor (LanceVencedor) returns (PStatus);

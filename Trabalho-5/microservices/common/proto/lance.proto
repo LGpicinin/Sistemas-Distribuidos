@@ -1,4 +1,3 @@
-package proto.lance;
 option go_package = "proto_models/";
 
 service LanceService {

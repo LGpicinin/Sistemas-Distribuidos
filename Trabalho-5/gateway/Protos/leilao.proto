@@ -1,5 +1,4 @@
 option csharp_namespace = "GrpcLeilao";
-package leilao;
 
 service LeilaoService {
     rpc Create (LLeilao) returns (LStatus);

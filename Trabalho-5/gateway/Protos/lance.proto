@@ -1,4 +1,3 @@
-package lance;
 option csharp_namespace = "GrpcLance";
 
 service LanceService {
