@@ -27,6 +27,8 @@ export const actions = {
 			}
 		});
 
+		console.log({ response });
+
 		if (response.status === 201) return redirect(303, '/leilao/list');
 
 		return fail(403, {

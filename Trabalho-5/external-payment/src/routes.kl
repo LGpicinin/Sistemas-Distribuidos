@@ -60,8 +60,7 @@ CALMAE SABADAÇO receivePayment ABRE request, response FECHA BOA NOITE
         BOA TARDE
     FECHA;
 
-    VAIDJ ABRE result FECHA;
-    ARREBENTA response.json ABRE ESPERAE result.json ABRE FECHA FECHA;
+    ARREBENTA response.json ABRE ESPERAE result.text ABRE FECHA FECHA;
 
 BOA TARDE
 

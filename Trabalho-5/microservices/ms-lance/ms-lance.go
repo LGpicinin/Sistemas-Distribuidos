@@ -158,7 +158,8 @@ func main() {
 	pb.RegisterLanceServiceServer(s, &server{})
 	fmt.Println("Server running on localhost:8080")
 
-	gatewayConn, err := grpc.NewClient("localhost:5059", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	gatewayConn, err := grpc.NewClient("localhost:5060", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	fmt.Println(gatewayConn.CanonicalTarget())
 	utils.FailOnError(err, "Erro ao conectar ao gateway")
 	defer gatewayConn.Close()
 

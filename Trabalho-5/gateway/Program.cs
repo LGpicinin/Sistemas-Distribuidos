@@ -3,6 +3,8 @@ using GrpcGateway;
 using GrpcLeilao;
 using GrpcLance;
 using GrpcPagamento;
+using System.Net;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +25,26 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.WebHost.ConfigureKestrel((context, serverOptions) =>
+{
+    var kestrelSection = context.Configuration.GetSection("Kestrel");
+
+    serverOptions.Listen(IPAddress.Loopback, 5060, listenOptions =>
+    {
+        listenOptions.Protocols = HttpProtocols.Http2;
+    });
+    serverOptions.Listen(IPAddress.Loopback, 5059, listenOptions =>
+    {
+        listenOptions.Protocols = HttpProtocols.Http1;
+    });
+});
+
+Notificacao notificacaoRouter = new Notificacao();
+Lance lanceRouter = new Lance();
+Routes.Leilao leilaoRouter = new Routes.Leilao(notificacaoRouter);
+
+builder.Services.AddSingleton(notificacaoRouter);
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -33,11 +55,6 @@ if (app.Environment.IsDevelopment())
 
 // Enable CORS
 app.UseCors("AllowAll");
-
-
-Notificacao notificacaoRouter = new Notificacao();
-Lance lanceRouter = new Lance();
-Routes.Leilao leilaoRouter = new Routes.Leilao(notificacaoRouter);
 
 lanceRouter.SetupRoutes(app);
 leilaoRouter.SetupRoutes(app);
